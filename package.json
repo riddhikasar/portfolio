@@ -65,11 +65,13 @@
     "vaul": "1.1.2"
   },
   "devDependencies": {
+    "@rollup/rollup-darwin-arm64": "4.62.2",
     "@tailwindcss/vite": "4.1.12",
     "@types/node": "^26.1.0",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "4.7.0",
+    "lightningcss-darwin-arm64": "^1.32.0",
     "tailwindcss": "4.1.12",
     "typescript": "^6.0.3",
     "vite": "6.3.5"
@@ -90,8 +92,5 @@
     "overrides": {
       "vite": "6.3.5"
     }
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-darwin-arm64": "4.62.2"
   }
 }
