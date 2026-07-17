@@ -2,17 +2,24 @@ import { type ReactNode } from "react";
 import { motion } from "motion/react";
 
 // Images
-import imgHero from "@/assets/noonchi/noonchi_hero.png";
-import imgHeroDark from "@/assets/noonchi/noonchi_hero_dark.png";
-import imgCodesign from "@/assets/noonchi/codesign.png";
-import imgWatch from "@/assets/noonchi/watch_screens.png";
-import imgS1 from "@/assets/noonchi/screen_1.png";
-import imgS2 from "@/assets/noonchi/screen_2.png";
-import imgS3 from "@/assets/noonchi/screen_3.png";
-import imgS4 from "@/assets/noonchi/screen_4.png";
-import imgS5 from "@/assets/noonchi/screen_5.png";
-import imgS6 from "@/assets/noonchi/screen_6.png";
-import imgS7 from "@/assets/noonchi/screen_7.png";
+import imgBook from "@/assets/water/books.png";
+import imgData from "@/assets/water/data.png";
+import imgGraph from "@/assets/water/graph.png";
+import imgS1 from "@/assets/water/screen_1.png";
+import imgS2 from "@/assets/water/screen_2.png";
+import imgS3 from "@/assets/water/screen_3.png";
+import imgS4 from "@/assets/water/screen_4.png";
+import imgS5 from "@/assets/water/screen_5.png";
+import imgS6 from "@/assets/water/screen_6.png";
+import imgS7 from "@/assets/water/screen_7.png";
+import imgI1 from "@/assets/water/idea_1.png";
+import imgI2 from "@/assets/water/idea_2.png";
+import imgI3 from "@/assets/water/idea_3.png";
+import imgI4 from "@/assets/water/idea_4.png";
+import imgI5 from "@/assets/water/idea_5.png";
+
+// Videos
+import thumbnail from "@/assets/water/thumbnail.mp4";
 
 // Main Icons
 import iconTeam from "@/assets/icons/team.svg";
@@ -20,16 +27,9 @@ import iconRole from "@/assets/icons/role.svg";
 import iconTime from "@/assets/icons/time.svg";
 
 // Concept Icons
-import iconC1 from "@/assets/noonchi/c_1.svg";
-import iconC2 from "@/assets/noonchi/c_2.svg";
-import iconC3 from "@/assets/noonchi/c_3.svg";
-
-// Step Icons
-import iconW1 from "@/assets/noonchi/w_1.svg";
-import iconW2 from "@/assets/noonchi/w_2.svg";
-import iconW2D from "@/assets/noonchi/w_2_dark.svg";
-import iconW3 from "@/assets/noonchi/w_3.svg";
-import iconW3D from "@/assets/noonchi/w_3_dark.svg";
+import iconC1 from "@/assets/water/c_1.svg";
+import iconC2 from "@/assets/water/c_2.svg";
+import iconC3 from "@/assets/water/c_3.svg";
 
 const PX = "px-5 sm:px-10 lg:px-[120px]";
 const META = "#8A8A8D";
@@ -84,7 +84,7 @@ function Section({
   );
 }
 
-export default function NoonchiPage({
+export default function WaterPage({
   dark,
   onBackToWork,
   onPrevProject,
@@ -101,8 +101,7 @@ export default function NoonchiPage({
   const dividerColor = dark ? "#FFFFFF" : "#000000";
 
   // Purple accent that stays readable on black
-  const PURPLE = dark ? "#B9B0FF" : "#4F36D7";
-  const RED = "#EA181B";
+  const PURPLE = dark ? "#ECBBFF" : "#8315EA";
 
   return (
     <main
@@ -111,21 +110,27 @@ export default function NoonchiPage({
     >
       {/* HERO (32px gap under header, respects 120px margins) */}
       <motion.section
-        id="noonchi"
+        id="sacred-water"
         className={`${PX} mt-[32px]`}
         style={{ scrollMarginTop: SCROLL_OFFSET_PX }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
-        <div className="w-full flex justify-center">
-          <img
-            src={dark ? imgHeroDark : imgHero}
-            alt="Noonchi hero"
-            className="block w-full h-auto object-contain"
-            style={{ maxHeight: HERO_MAX_H }}
-            draggable={false}
-          />
+        <div className="mt-[42px] w-full overflow-hidden bg-black">
+          <div className="relative w-full aspect-[1200/650]">
+            <video
+              className="absolute inset-0 w-full h-full object-cover"
+              preload="auto"
+              autoPlay
+              loop
+              muted
+              playsInline
+              controls
+            >
+              <source src={thumbnail} type="video/mp4" />
+            </video>
+          </div>
         </div>
       </motion.section>
 
@@ -139,18 +144,17 @@ export default function NoonchiPage({
       >
         <div className="w-full">
           <h1 className="font-['Instrument_Sans'] font-medium leading-[1] tracking-[-0.05em] text-[clamp(40px,5vw,72px)]">
-            Noonchi
+            Sacred Water - Data Visualization
           </h1>
 
           <p className="mt-4 w-full font-['Instrument_Sans'] text-[clamp(16px,1.6vw,20px)] leading-relaxed opacity-90">
-            I co-founded, designed, and built Noonchi - an intelligent app + wearable system to bridge
-            the communication gap between autistic and non-autistic individuals in the workplace.
+            I built the visual design for Sacred Water - a data visualization website that studies water data, it’s usage, symbolism, and meaning over different rituals, cultures, religion, and geography - proving that while we are separated by ideas, we are all connected by water in its true meaning.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-3">
             <MetaItem icon={iconTeam} text="Team: 2" />
-            <MetaItem icon={iconRole} text="Role: Founder, Design + Dev" />
-            <MetaItem icon={iconTime} text="Time: 1 yr" />
+            <MetaItem icon={iconRole} text="Role: Research, Design" />
+            <MetaItem icon={iconTime} text="Time: 3 months" />
           </div>
         </div>
       </motion.header>
@@ -158,51 +162,10 @@ export default function NoonchiPage({
       {/* SECTIONS */}
       <Section dividerColor={dividerColor} title="Context">
         <div className="leading-relaxed">
-          Workplace <span className="font-semibold">communication</span> is often{" "}
-          <span className="font-semibold">indirect</span>. Individuals are expected to decode tone,
-          subtext, and underlying meanings constantly.
-          <span className="block mt-2 font-semibold" style={{ color: RED }}>
-            However, for autistic and neurodivergent individuals who depend on direct communication,
-            this makes conversations itself extremely non-inclusive.
+          Water is often visualized as quantity: levels, flow, access, contamination. But people also relate to <span className="font-semibold">water through memory, ritual, place, and survival.</span>
+          <span className="block mt-2">
+            We wanted to explore a key question:
           </span>
-          <span className="block mt-2 font-semibold">
-            Noonchi challenges this norm and bridges this communication gap.
-          </span>
-        </div>
-      </Section>
-
-      <Section dividerColor={dividerColor} id="design-challenge" title="Design Challenge">
-        <div className="leading-relaxed">
-          The real challenge was not making people communicate better.
-          <span className="block mt-2 font-semibold">
-            It was designing a system that could make social cues clearer without making anyone feel
-            watched, corrected, or exposed.
-          </span>
-          <span className="block mt-2">We wanted to know:</span>
-          <span className="block mt-2 font-semibold" style={{ color: PURPLE }}>
-            “What if communication support did not sit on one person, but lived in the shared space
-            between people?”
-          </span>
-        </div>
-      </Section>
-
-      <Section dividerColor={dividerColor} title="Co-Designing the Solution">
-        <div className="leading-relaxed">
-          There was no way we could answer such a multi-faceted question alone. That’s why we hosted{" "}
-          <span className="font-semibold">co-design sessions to build Noonchi with our users.</span>
-        </div>
-
-        <div className="mt-2 leading-relaxed">
-          We built, tested, and iterated Noonchi with <span className="font-semibold">50+ users</span>{" "}
-          — both from the autistic and non-autistic community.
-        </div>
-
-        <div className="mt-[42px] w-full overflow-hidden bg-white dark:bg-black">
-          <img
-            src={imgCodesign}
-            alt="Co-design sessions"
-            className="w-full h-auto block object-cover"
-          />
         </div>
 
         {/* Testimony INSIDE the same section (consistent spacing) */}
@@ -222,123 +185,23 @@ export default function NoonchiPage({
               color: PURPLE,
             }}
           >
-            “I wish I had this my whole life…”
-          </p>
-
-          <p
-            className="m-0 mt-4 font-['Instrument_Sans']"
-            style={{
-              fontSize: "clamp(16px,1.6vw,22px)",
-              color: dark ? "white" : "black",
-            }}
-          >
-            — Noonchi beta user
+            How does the symbolic and practical use of water in religion create a unifying yet diverse narrative of humanity’s spiritual connection to this universal and essential resource?
           </p>
         </motion.div>
       </Section>
 
-      <Section dividerColor={dividerColor} title="How Noonchi Works">
-        <p className="max-w-[980px]">
-          Noonchi has three layers — a physical wearable system, a digital desktop application, and a guiding framework.
-        </p>
-
-        <div className="mt-[42px] grid grid-cols-1 md:grid-cols-3 gap-[42px]">
-          {/* 1 */}
-          <div className="flex flex-col items-center text-center">
-            <div
-              className="flex items-center justify-center rounded-full"
-              style={{ width: 110, height: 110, backgroundColor: "#FFE53A" }}
-            >
-              <img
-                src={iconW1}
-                alt=""
-                aria-hidden
-                className="h-[62px] w-[62px] object-contain"
-              />
-            </div>
-
-            <div className="mt-5 font-['Space_Grotesk'] text-center">
-              <div className="font-medium text-[24px] leading-tight">Real-time Nudges</div>
-              <div
-                className="mt-2 font-normal text-base leading-snug max-w-[280px] mx-auto"
-                style={{ color: fg }}  // readable in both modes; change to "black" if you insist
-              >
-                Noonchi pairs with your smart watch to nudge you when you need it in the present moment
-              </div>
-            </div>
-          </div>
-
-          {/* 2 */}
-          <div className="flex flex-col items-center text-center">
-            <div
-              className="flex items-center justify-center rounded-full"
-              style={{ width: 110, height: 110, backgroundColor: dark ? "#B9B0FF" : "#4F36D7" }}
-            >
-              <img
-                src={dark ? iconW2D : iconW2}
-                alt=""
-                aria-hidden
-                className="h-[62px] w-[62px] object-contain"
-              />
-            </div>
-
-            <div className="mt-5 font-['Space_Grotesk'] text-center">
-              <div className="font-medium text-[24px] leading-tight">Post-meeting Reflections</div>
-              <div
-                className="mt-2 font-normal text-base leading-snug max-w-[320px] mx-auto"
-                style={{ color: fg }}
-              >
-                Noonchi app shows you what went right in your meetings and what needs work
-              </div>
-            </div>
-          </div>
-
-          {/* 3 */}
-          <div className="flex flex-col items-center text-center">
-            <div
-              className="flex items-center justify-center rounded-full"
-              style={{
-                width: 110,
-                height: 110,
-                backgroundColor: "transparent",
-                border: `1px solid ${dark ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.65)"}`,
-              }}
-            >
-              <img
-                src={dark ? iconW3D : iconW3}
-                alt=""
-                aria-hidden
-                className="h-[62px] w-[62px] object-contain"
-              />
-            </div>
-
-            <div className="mt-5 font-['Space_Grotesk'] text-center">
-              <div className="font-medium text-[24px] leading-tight">Guiding Framework</div>
-              <div
-                className="mt-2 font-normal text-base leading-snug max-w-[320px] mx-auto"
-                style={{ color: fg }}
-              >
-                Practice, learn, and grow with custom frameworks designed for your specific needs
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-[92px] w-full flex justify-center">
-          <img
-            src={imgWatch}
-            alt="Noonchi watch screens"
-            className="w-full h-auto block object-contain max-w-[1100px]"
-          />
+      <Section dividerColor={dividerColor} id="design-challenge" title="Final Solution">
+        <div className="leading-relaxed">
+          Final visualization screens
         </div>
       </Section>
 
-      <motion.section
+        <motion.section
         className="w-full"
         style={{
           background: dark
-            ? "linear-gradient(180deg, #000000 0%, #7165B2 100%)"
-            : "linear-gradient(180deg, #FFFFFF 0%, #7165B2 100%)",
+            ? "linear-gradient(180deg, #000000 100%, #7165B2 10%)"
+            : "linear-gradient(180deg, #000000 100%, #7165B2 10%)",
         }}
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
@@ -367,6 +230,126 @@ export default function NoonchiPage({
         </div>
       </motion.section>
 
+      <Section dividerColor={dividerColor} title="Process Overview">
+        <div className="leading-relaxed font-semibold">
+          01: Gathering the Data
+        </div>
+          <div className="mt-2 leading-relaxed">
+            The data gathering process included <span className="font-semibold">web-scrapping and many visits to multiple libraries.</span> We also reached out to the research librarians at the <span className="font-semibold">Harvard Divinity School</span> to gain their perspectives on our topic.
+          </div>
+          <div className="mt-2 leading-relaxed">
+            Finally, after many searches, we narrowed down on three books to be used as our primary sources of information.
+          </div>
+
+          <div className="mt-[42px] w-full overflow-hidden bg-white dark:bg-black">
+            <img
+              src={imgBook}
+              alt="Books"
+              className="w-full h-auto block object-cover"
+            />
+          </div>
+
+          <div className="mt-[92px] leading-relaxed font-semibold">
+            02: Computing the Data
+            </div>
+              <div className="mt-2 leading-relaxed">
+                We used the GPT 4.0 model on Perplexity to <span className="font-semibold">analyze the texts and manually built an exhaustive dataset featuring the different uses and themes of water across a set category of religions.</span>
+              </div>
+              <div className="mt-2 leading-relaxed">
+                Our choice for the religions defined in a category was based on existing research on 10 most-practiced religions across the world.
+              </div>
+              <div className="mt-[42px] w-full overflow-hidden bg-white dark:bg-black">
+                <img
+                  src={imgData}
+                  alt="Data"
+                  className="w-full h-auto block object-cover"
+                />
+              </div>
+
+          <div className="mt-[92px] leading-relaxed font-semibold">
+            03: Exploring the Data
+            </div>
+              <div className="mt-2 leading-relaxed">
+                We used Excel, P5 and Figma to explore the data we had built. We wanted to understand what the data was telling us, what were some interesting trends observed, and how was water being perceived across the different religions.
+              </div>
+              <div className="mt-[42px] w-full overflow-hidden bg-white dark:bg-black">
+                <img
+                  src={imgGraph}
+                  alt="Graph"
+                  className="w-full h-auto block object-cover"
+                />
+              </div>
+
+          <div className="mt-[92px] leading-relaxed font-semibold">
+            04: Visualizing the Data
+            </div>
+              <div className="mt-2 leading-relaxed">
+                Here we explored how we wanted to tell the story we had. <span className="font-semibold">What did we want the viewers to feel? What did we want the viewers to know and take away from this visualization?</span>
+              </div>
+              <div className="mt-2 leading-relaxed">
+                A few of the ideations are depicted below.
+              </div>
+              <div className="mt-[42px] w-full overflow-hidden bg-white dark:bg-black">
+                <img
+                  src={imgI1}
+                  alt="Idea 1"
+                  className="w-full h-auto block object-cover"
+                />
+              </div>
+              <div className="mt-[42px] w-full overflow-hidden bg-white dark:bg-black">
+                <img
+                  src={imgI2}
+                  alt="Idea 2"
+                  className="w-full h-auto block object-cover"
+                />
+              </div>
+              <div className="mt-[42px] w-full overflow-hidden bg-white dark:bg-black">
+                <img
+                  src={imgI3}
+                  alt="Idea 3"
+                  className="w-full h-auto block object-cover"
+                />
+              </div>
+              <div className="mt-[42px] w-full overflow-hidden bg-white dark:bg-black">
+                <img
+                  src={imgI4}
+                  alt="Idea 4"
+                  className="w-full h-auto block object-cover"
+                />
+              </div>
+              <div className="mt-[42px] w-full overflow-hidden bg-white dark:bg-black">
+                <img
+                  src={imgI5}
+                  alt="Idea 5"
+                  className="w-full h-auto block object-cover"
+                />
+              </div>
+
+              <div className="mt-[92px] leading-relaxed">
+                Keeping to the theme of <span className="font-semibold">scriptures,</span> we decided on a design that gives a sense of a <span className="font-semibold">“stack of ritual texts”</span> that can be easily sorted for different views.
+              </div>
+              <div className="mt-4 leading-relaxed">
+                The title <span className="font-semibold">‘And We Made From Water, Every Living Thing’</span> comes from a quote from a religious text, to highlight the relevance of water in religion.
+              </div>
+              <div className="mt-4 leading-relaxed">
+                What is water depicted as? Viewed as? And represented as? <span className="font-semibold">Although we seek to answer these questions from this project, the true answers lie within the viewer, and their relation with water.</span>
+                </div>
+
+        <div className="mt-[92px] leading-relaxed">
+          <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
+            <iframe
+              src="https://player.vimeo.com/video/1071647312?badge=0&autopause=0&player_id=0&app_id=58479"
+              frameBorder={0}
+              allow="fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+              title="Sacred Water"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      </Section>
+
       <Section dividerColor={dividerColor} id="concepts-applied" title="Concepts Applied">
         <div className="mt-[42px] grid grid-cols-1 md:grid-cols-3 gap-[42px]">
           {/* 1 */}
@@ -389,7 +372,7 @@ export default function NoonchiPage({
             </div>
 
             <div className="mt-5 font-['Space_Grotesk'] text-center font-normal text-[16px] leading-snug max-w-[260px]">
-              Designing for accessibility and trust
+              Qualitative Research
             </div>
           </div>
 
@@ -413,7 +396,7 @@ export default function NoonchiPage({
             </div>
 
             <div className="mt-5 font-['Space_Grotesk'] text-center font-normal text-[16px] leading-snug max-w-[260px]">
-              Involving users in design process
+              Data Gathering
             </div>
           </div>
 
@@ -437,7 +420,7 @@ export default function NoonchiPage({
             </div>
 
             <div className="mt-5 font-['Space_Grotesk'] text-center font-normal text-[16px] leading-snug max-w-[280px]">
-              Acting on the gathered data, meaningfully
+              Data Storytelling
             </div>
           </div>
         </div>
