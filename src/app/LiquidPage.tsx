@@ -11,9 +11,6 @@ import imgS5 from "@/assets/liquid/screen_5.png";
 import imgS6 from "@/assets/liquid/screen_6.png";
 import imgS7 from "@/assets/liquid/screen_7.png";
 
-// Videos
-import demoMp4 from "@/assets/liquid/liquid_demo.mp4";
-
 // Main Icons
 import iconTeam from "@/assets/icons/team.svg";
 import iconRole from "@/assets/icons/role.svg";
@@ -207,7 +204,7 @@ export default function LiquidPage({
 
         {/* WEBSITE LINK */}
         <motion.div
-          className="mt-[92px] text-center"
+          className="mt-[92px] mb-[92px] text-center"  
           initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.25 }}
@@ -235,19 +232,17 @@ export default function LiquidPage({
           </p>
         </motion.div>
 
-        <div className="mt-[92px] w-full overflow-hidden bg-black">
-          <div className="relative w-full aspect-[1200/753.17]">
-            <video
-              className="absolute inset-0 w-full h-full object-cover"
-              preload="auto"
-              autoPlay
-              loop
-              muted
-              playsInline
-              controls
-            >
-              <source src={demoMp4} type="video/mp4" />
-            </video>
+        <div className="w-full overflow-hidden">
+          <div className="relative w-full aspect-[100/54.56]">
+            <iframe
+              src="https://player.vimeo.com/video/1210329599?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1"
+              className="absolute inset-0 w-full h-full"
+              frameBorder={0}
+              allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              title="Liquid Data"
+              allowFullScreen
+            />
           </div>
         </div>
       </Section>

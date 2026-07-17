@@ -10,12 +10,9 @@ import imgE2 from "@/assets/relevo/electronics_2.png";
 import imgDash from "@/assets/relevo/dashboard.png";
 
 // Videos
-import BraceMp4 from "@/assets/relevo/brace.mp4";
-import CushionMp4 from "@/assets/relevo/cushion.mp4";
 import Fem1Mp4 from "@/assets/relevo/fem_1.mp4";
 import Fem2Mp4 from "@/assets/relevo/fem_2.mp4";
 import D1Mp4 from "@/assets/relevo/demo_1.mp4";
-import D2Mp4 from "@/assets/relevo/demo_2.mp4";
 
 // Main Icons
 import iconTeam from "@/assets/icons/team.svg";
@@ -65,7 +62,7 @@ function Section({
       }}
       initial={{ opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.22 }}
+      viewport={{ once: true, amount: 0.06 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div className="w-full">
@@ -207,7 +204,6 @@ export default function RelevoPage({
       </Section>
 
       <Section dividerColor={dividerColor} title="How It Works">
-        <div className="text-black dark:text-white">
           <div className="leading-relaxed">
             Relevo is equipped with 3 components —{" "}
             <span className="font-semibold">The Brace, The Cushion, and The Dashboard</span>{" "}
@@ -229,20 +225,16 @@ export default function RelevoPage({
 
             {/* video */}
             <div className="mt-[42px] w-full overflow-hidden bg-black">
-              <div className="relative w-full aspect-[1320/736.88]">
-                <video
-                  className="absolute inset-0 w-full h-full object-cover"
-                  preload="metadata"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  controls
-                >
-                  <source src={BraceMp4} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              </div>
+              <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
+                <iframe
+                  src="https://player.vimeo.com/video/1210845922?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1&loop=1"
+                  frameBorder={0}
+                  allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                  title="Relevo Brace"
+                  allowFullScreen
+                />
             </div>
 
             <div className="mt-[42px] leading-relaxed">
@@ -257,19 +249,16 @@ export default function RelevoPage({
 
             {/* video */}
             <div className="mt-[42px] w-full overflow-hidden bg-black">
-              <div className="relative w-full aspect-[1320/736.88]">
-                <video
-                  className="absolute inset-0 w-full h-full object-cover"
-                  preload="metadata"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  controls
-                >
-                  <source src={CushionMp4} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
+              <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
+                <iframe
+                  src="https://player.vimeo.com/video/1210845923?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1&loop=1"
+                  frameBorder={0}
+                  allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                  title="Relevo Cushion"
+                  allowFullScreen
+                />
               </div>
             </div>
 
@@ -397,16 +386,16 @@ export default function RelevoPage({
             </div>
 
         <div className="mt-[92px] w-full overflow-hidden bg-black">
-              <div className="relative w-full aspect-[1320/675]">
-                <video
-                  className="absolute inset-0 w-full h-full object-cover"
-                  preload="auto"
-                  loop
-                  playsInline
-                  controls
-                >
-                  <source src={D2Mp4} type="video/mp4" />
-                </video>
+              <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
+                <iframe
+                  src="https://player.vimeo.com/video/1071643923?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=0"
+                  frameBorder={0}
+                  allow="fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                  title="Relevo"
+                  allowFullScreen
+                />
               </div>
           </div>
       </Section>

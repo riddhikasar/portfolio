@@ -7,9 +7,6 @@ import imgAlgo from "@/assets/liquid/algo.png";
 import imgInteraction from "@/assets/liquid/interaction.png";
 import imgHardware from "@/assets/liquid/hardware.png";
 
-// Videos
-import demoMp4 from "@/assets/liquid/liquidrobotics_demo.mp4";
-
 // Main Icons
 import iconTeam from "@/assets/icons/team.svg";
 import iconRole from "@/assets/icons/role.svg";
@@ -198,17 +195,17 @@ export default function LiquidPage({
       </Section>
 
       <Section dividerColor={dividerColor} id="final-solution" title="Final Solution">
-        <div className="mt-[92px] w-full overflow-hidden bg-black">
-          <div className="relative w-full aspect-[1261/710]">
-            <video
-              className="absolute inset-0 w-full h-full object-cover"
-              preload="auto"
-              loop
-              playsInline
-              controls
-            >
-              <source src={demoMp4} type="video/mp4" />
-            </video>
+        <div className="w-full overflow-hidden">
+          <div className="relative w-full aspect-[16/9]">
+            <iframe
+              src="https://player.vimeo.com/video/1210329078?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1"
+              className="absolute inset-0 w-full h-full"
+              frameBorder={0}
+              allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              title="Liquid Robotics"
+              allowFullScreen
+            />
           </div>
         </div>
       </Section>
