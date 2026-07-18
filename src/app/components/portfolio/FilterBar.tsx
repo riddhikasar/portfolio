@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import type { WorkTab } from "@/app/lib/projects";
 import { getTheme } from "@/app/lib/theme";
+import Arrow from "@/app/components/Arrow";
 
 function Pill({
   label,
@@ -101,12 +102,7 @@ export function FilterBar({
         >
           Publications
         </span>
-        <span
-          className="font-['Instrument_Sans'] text-[clamp(14px,1.39vw,20px)] font-normal tracking-[-1px]"
-          style={{ fontVariationSettings: '"wdth" 100' }}
-        >
-          ↗︎
-        </span>
+        <Arrow style={{ width: "clamp(16px,1.6vw,24px)", height: "auto", display: "inline-block" }} />
       </motion.a>
     </div>
   );

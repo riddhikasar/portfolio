@@ -191,7 +191,7 @@ export default function About() {
             Harvard
           </span>
         </a>
-        <span className="leading-[1.1]">{` ↗`}</span>
+        <span style={{ fontFamily: "'Instrument_Sans'", fontVariationSettings: '"wdth" 100' }}>{'\u2197\uFE0E'}</span>
       </p>
       <Header />
       <Frame4 />
@@ -203,7 +203,7 @@ export default function About() {
             riddhikasar02@gmail.com
           </span>
         </a>
-        <span className="leading-[normal]">{` ↗︎ `}</span>
+        <span style={{ fontFamily: "'Instrument_Sans'", fontVariationSettings: '"wdth" 100' }}>{'\u2197\uFE0E'}</span>
       </p>
       <Menu />
       <Bit1 />

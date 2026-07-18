@@ -191,7 +191,7 @@ export default function AboutDark() {
             Harvard
           </span>
         </a>
-        <span className="leading-[1.1]">{` ↗`}</span>
+        <span className="leading-[1.1]"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden focusable={false}><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" strokeWidth="3.2" strokeLinecap="butt" strokeLinejoin="miter"/><polyline points="8.5,4 20,4 20,15.5" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="butt" strokeLinejoin="miter"/></svg></span>
       </p>
       <Header />
       <Frame4 />
@@ -203,7 +203,7 @@ export default function AboutDark() {
             riddhikasar02@gmail.com
           </span>
         </a>
-        <span className="leading-[normal]">{` ↗︎ `}</span>
+        <span className="leading-[normal]"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden focusable={false}><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" strokeWidth="3.2" strokeLinecap="butt" strokeLinejoin="miter"/><polyline points="8.5,4 20,4 20,15.5" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="butt" strokeLinejoin="miter"/></svg></span>
       </p>
       <Menu />
       <Bit1 />

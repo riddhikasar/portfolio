@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { motion } from "motion/react";
+import Arrow from "./components/Arrow";
 
 // Images
 import imgHero from "@/assets/relevo/relevo_hero.png";
@@ -26,6 +27,8 @@ const META = "#8A8A8D";
 
 const SCROLL_OFFSET_PX = 88;
 const HERO_MAX_H = "calc(100svh - 140px)";
+
+type Page = "relevo-robotics";
 
 function MetaItem({ icon, text }: { icon: string; text: string }) {
   return (
@@ -79,11 +82,13 @@ export default function RelevoPage({
   onBackToWork,
   onPrevProject,
   onNextProject,
+  setPage,
 }: {
   dark: boolean;
   onBackToWork?: () => void;
   onPrevProject?: () => void;
   onNextProject?: () => void;
+  setPage: (page: Page) => void;
 }) {
   const fg = dark ? "white" : "black";
 
@@ -145,11 +150,36 @@ export default function RelevoPage({
         <div className="leading-relaxed">
           Rehabilitation does not end when the patient leaves the clinic. Doctors and physiotherapists need a way to <span className="font-semibold">understand whether patients are improving, struggling, or missing critical recovery milestones.</span>
           <span className="block mt-4">
-            This project is a part of <span className="font-semibold underline" style={{ textUnderlinePosition: "from-font" }}>Relevo Robotics ↗︎</span> : the soft-robotic wearable for post-surgery knee rehabilitation.
+            This project is a part of <motion.button
+              type="button"
+              onClick={() => setPage("relevo-robotics")}
+              className="font-semibold underline"
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                margin: 0,
+                color: "inherit",
+                cursor: "pointer",
+                textDecoration: "underline",
+                textUnderlinePosition: "from-font",
+                fontFamily: "inherit",
+                fontSize: "inherit",
+                lineHeight: "inherit",
+                letterSpacing: "inherit",
+              }}
+              whileHover={{ opacity: 0.75 }}
+              transition={{ duration: 0.15 }}
+            >
+              Relevo Robotics <Arrow size="1em" style={{ display: "inline-block", verticalAlign: "text-bottom", marginLeft: 4, marginRight: 0 }} />
+            </motion.button> the soft-robotic wearable for post-surgery knee rehabilitation.
           </span>
         </div>
 
-        <div className="mt-[72px] w-full overflow-hidden bg-white dark:bg-black">
+        <div
+          className="mt-[72px] w-full overflow-hidden rounded-[8px]"
+          style={{ backgroundColor: dark ? "#000" : "#fff" }}
+        >
           <img
             src={imgMain}
             alt="Relevo main"
@@ -172,7 +202,7 @@ export default function RelevoPage({
           01: <span className="font-semibold">Information architecture</span> to map out the elements and pages
         </div>
 
-        <div className="mt-[42px] w-full overflow-hidden bg-white dark:bg-black">
+        <div className="mt-[42px] w-full overflow-hidden" style={{ backgroundColor: dark ? "#000" : "#fff" }}>
           <img
             src={imgIA}
             alt="Information architecture"
@@ -184,7 +214,7 @@ export default function RelevoPage({
           02: <span className="font-semibold">Low fidelity prototypes</span> to understand the user flow and layout
         </div>
 
-        <div className="mt-[42px] w-full overflow-hidden bg-white dark:bg-black">
+        <div className="mt-[42px] w-full overflow-hidden" style={{ backgroundColor: dark ? "#000" : "#fff" }}>
           <img
             src={imgWire}
             alt="Low fidelity prototypes"
@@ -283,7 +313,13 @@ export default function RelevoPage({
               {[imgS1, imgS2, imgS3].map((src, i) => (
                 <div
                   key={i}
-                  className="w-full rounded-[4px] overflow-hidden bg-white shadow-[0_14px_40px_rgba(0,0,0,0.16)]"
+                  className="w-full rounded-[4px] overflow-hidden"
+                  style={{
+                    backgroundColor: dark ? "#111" : "#fff",
+                    boxShadow: dark
+                      ? "0 14px 40px rgba(255,255,255,0.07)"
+                      : "0 14px 40px rgba(0,0,0,0.16)",
+                  }}
                 >
                   <img
                     src={src}

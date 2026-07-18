@@ -63,7 +63,7 @@ function Section({
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div className="w-full">
-        <h2 className="font-['Instrument_Sans'] font-medium tracking-[-0.05em] text-[clamp(32px,4vw,56px)]">
+        <h2 className="font-['Instrument_Sans'] font-normal tracking-[-0.05em] text-[clamp(32px,4vw,56px)]">
           {title}
         </h2>
         <div className="mt-6 font-['Instrument_Sans'] text-[clamp(16px,1.6vw,20px)] leading-relaxed opacity-90">

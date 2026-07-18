@@ -141,7 +141,7 @@ export default function NoonchiPage({
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className="w-full">
-          <h1 className="font-['Instrument_Sans'] font-medium leading-[1] tracking-[-0.05em] text-[clamp(40px,5vw,72px)]">
+          <h1 className="font-['Instrument_Sans'] font-normal leading-[1] tracking-[-0.05em] text-[clamp(40px,5vw,72px)]">
             Noonchi
           </h1>
 
@@ -296,11 +296,11 @@ export default function NoonchiPage({
       </Section>
 
       <Section dividerColor={dividerColor} title="How Noonchi Works">
-        <p className="max-w-[980px]">
-          Noonchi has three layers — a physical wearable system, a digital desktop application, and a guiding framework.
+        <p className="whitespace-normal">
+          Noonchi has three layers — a physical wearable system, a digital desktop application, and a guiding&nbsp;framework.
         </p>
 
-        <div className="mt-[42px] grid grid-cols-1 md:grid-cols-3 gap-[42px]">
+        <div className="mt-[42px] grid grid-cols-1 md:grid-cols-3 gap-[42px] md:gap-x-[42px] justify-items-center">
           {/* 1 */}
           <div className="flex flex-col items-center text-center">
             <div
@@ -318,7 +318,7 @@ export default function NoonchiPage({
             <div className="mt-5 font-['Space_Grotesk'] text-center">
               <div className="font-medium text-[24px] leading-tight">Real-time Nudges</div>
               <div
-                className="mt-2 font-normal text-base leading-snug max-w-[280px] mx-auto"
+                className="mt-2 font-normal text-base leading-snug max-w-[320px] mx-auto"
                 style={{ color: fg }}  // readable in both modes; change to "black" if you insist
               >
                 Noonchi pairs with your smart watch to nudge you when you need it in the present moment

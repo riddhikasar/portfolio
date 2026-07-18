@@ -5,6 +5,7 @@ import { getTheme } from "@/app/lib/theme";
 import type { WorkTab } from "@/app/lib/projects";
 import imgAboutBg from "@/imports/About/d3e490f18a3fd716fe71a9632991d885c72ea5bb.png";
 import { BitText } from "@/app/components/portfolio/BitIcon";
+import Arrow from "@/app/components/Arrow";
 
 function SpecPill({
   label,
@@ -22,19 +23,22 @@ function SpecPill({
     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
       <Link
         to={`/?tab=${tab}`}
-        className="flex items-center justify-center rounded-[24px] px-[18px] py-[12px]"
+        className="flex items-center justify-center rounded-[24px] cursor-pointer shrink-0"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
+          padding: "clamp(8px,0.83vw,12px) clamp(12px,1.25vw,18px)",
           border: theme.border,
           color: hovered ? "#000000" : theme.fg,
           backgroundColor: hovered ? theme.activePill : "transparent",
           transition: "background-color 0.18s ease, color 0.18s ease",
+          fontFamily: "'Source Code Pro', monospace",
+          fontWeight: 600,
+          fontSize: "clamp(12px,1.11vw,16px)",
+          whiteSpace: "nowrap",
         }}
       >
-        <span className="font-['Source_Code_Pro'] text-[clamp(14px,1.25vw,18px)] font-semibold whitespace-nowrap">
-          {label}
-        </span>
+        {label}
       </Link>
     </motion.div>
   );
@@ -60,16 +64,17 @@ function ContactPill({
     color: hovered ? "#000000" : theme.fg,
     backgroundColor: hovered ? theme.activePill : "transparent",
     fontFamily: "'Source Code Pro', monospace",
-    fontWeight: 500,
-    fontSize: 16,
+    fontWeight: 600,
+    fontSize: "clamp(12px,1.11vw,16px)",
     minWidth,
     transition: "background-color 0.18s ease, color 0.18s ease",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "12px 18px",
+    padding: "clamp(8px,0.83vw,12px) clamp(12px,1.25vw,18px)",
     borderRadius: 24,
     cursor: "pointer",
+    whiteSpace: "nowrap",
   };
 
   if (href) {
@@ -127,7 +132,7 @@ export function AboutPage({ dark }: { dark: boolean }) {
           className="font-['Instrument_Sans'] font-normal leading-[1.1]"
           style={{
             fontSize: "clamp(32px,4.44vw,64px)",
-            letterSpacing: "-3.2px",
+            letterSpacing: "-0.03em",
             fontVariationSettings: '"wdth" 100',
           }}
         >
@@ -142,7 +147,7 @@ export function AboutPage({ dark }: { dark: boolean }) {
           >
             Harvard
           </motion.a>
-          {" ↗"}
+          <Arrow size="1em" style={{ display: "inline-block", verticalAlign: "text-bottom", marginLeft: 4, marginRight: 0 }} />
         </h1>
       </motion.div>
 
@@ -154,30 +159,30 @@ export function AboutPage({ dark }: { dark: boolean }) {
       >
         <div className="flex flex-wrap items-center gap-[12px]" style={{ rowGap: 12 }}>
           <span
-            className="font-['Instrument_Sans'] font-normal tracking-[-2.1px]"
-            style={{ fontSize: "clamp(20px,2.92vw,42px)", fontVariationSettings: '"wdth" 100' }}
+            className="font-['Instrument_Sans'] font-normal"
+            style={{ fontSize: "clamp(20px,2.92vw,42px)", letterSpacing: "-0.03em", fontVariationSettings: '"wdth" 100' }}
           >
             And I specialize in building
           </span>
           <SpecPill label="Digital Interfaces" tab="digital" dark={dark} />
           <span
-            className="font-['Instrument_Sans'] font-normal tracking-[-2.1px]"
-            style={{ fontSize: "clamp(20px,2.92vw,42px)", fontVariationSettings: '"wdth" 100' }}
+            className="font-['Instrument_Sans'] font-normal"
+            style={{ fontSize: "clamp(20px,2.92vw,42px)", letterSpacing: "-0.03em", fontVariationSettings: '"wdth" 100' }}
           >
             for
           </span>
           <SpecPill label="Robotics" tab="robotics" dark={dark} />
           <span
-            className="font-['Instrument_Sans'] font-normal tracking-[-2.1px]"
-            style={{ fontSize: "clamp(20px,2.92vw,42px)", fontVariationSettings: '"wdth" 100' }}
+            className="font-['Instrument_Sans'] font-normal"
+            style={{ fontSize: "clamp(20px,2.92vw,42px)", letterSpacing: "-0.03em", fontVariationSettings: '"wdth" 100' }}
           >
             and
           </span>
           <SpecPill label="Physical Systems" tab="physical" dark={dark} />
         </div>
         <p
-          className="mt-[4px] font-['Instrument_Sans'] font-normal tracking-[-2.1px]"
-          style={{ fontSize: "clamp(20px,2.92vw,42px)", fontVariationSettings: '"wdth" 100' }}
+          className="mt-[4px] font-['Instrument_Sans'] font-normal"
+          style={{ fontSize: "clamp(20px,2.92vw,42px)", letterSpacing: "-0.02em", fontVariationSettings: '"wdth" 100' }}
         >
           shaping how <strong>humans</strong> and <strong>robots interact, communicate, and collaborate.</strong>
         </p>
@@ -202,8 +207,8 @@ export function AboutPage({ dark }: { dark: boolean }) {
           />
         </div>
         <div
-          className="relative font-['Source_Code_Pro'] font-normal tracking-[-1.2px]"
-          style={{ fontSize: "clamp(14px,1.67vw,24px)" }}
+          className="relative font-['Source_Code_Pro'] font-normal"
+          style={{ fontSize: "clamp(14px,1.67vw,24px)", letterSpacing: "-0.01em" }}
         >
           <p className="mb-0">
             I believe that <strong>true depth comes from applying everything we know to everything we make.</strong>
@@ -235,7 +240,7 @@ export function AboutPage({ dark }: { dark: boolean }) {
           >
             riddhikasar02@gmail.com
           </motion.a>
-          {" ↗︎"}
+          <Arrow size="1em" style={{ display: "inline-block", verticalAlign: "text-bottom", marginLeft: 4, marginRight: 0 }} />
         </p>
       </motion.div>
 

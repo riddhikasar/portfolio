@@ -14,7 +14,7 @@ export function Header({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
       <motion.div whileHover={{ opacity: 0.65 }} transition={{ duration: 0.15 }}>
         <Link
           to="/"
-          className="font-['Source_Code_Pro'] text-[clamp(13px,1.25vw,18px)] font-normal uppercase leading-[1.45] tracking-[-0.09px]"
+          className="font-['Source_Code_Pro'] text-[clamp(13px,1.25vw,18px)] font-medium uppercase leading-[1.45] tracking-[-0.09px]"
           style={{ color: theme.fg }}
         >
           Riddhi Kasar
@@ -25,7 +25,7 @@ export function Header({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
         <motion.div whileHover={{ opacity: 0.65 }} transition={{ duration: 0.15 }}>
           <Link
             to="/about"
-            className="font-['Source_Code_Pro'] text-[clamp(11px,0.97vw,14px)] font-normal leading-[1.45] tracking-[-0.07px]"
+            className="font-['Source_Code_Pro'] text-[clamp(11px,0.97vw,14px)] font-medium leading-[1.45] tracking-[-0.07px]"
             style={{
               color: theme.fg,
               textDecoration: isAbout ? "underline" : "none",
@@ -38,7 +38,7 @@ export function Header({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
         <motion.div whileHover={{ opacity: 0.65 }} transition={{ duration: 0.15 }}>
           <Link
             to="/"
-            className="font-['Source_Code_Pro'] text-[clamp(11px,0.97vw,14px)] font-normal leading-[1.45] tracking-[-0.07px]"
+            className="font-['Source_Code_Pro'] text-[clamp(11px,0.97vw,14px)] font-medium leading-[1.45] tracking-[-0.07px]"
             style={{
               color: theme.fg,
               textDecoration: isWork ? "underline" : "none",

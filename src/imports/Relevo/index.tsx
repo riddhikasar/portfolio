@@ -159,7 +159,7 @@ function Frame11() {
         </span>
         <span className="leading-[normal] text-[24px]">{` `}</span>
         <span className="font-['Instrument_Sans:Medium',sans-serif] font-medium leading-[normal] text-[26px]" style={{ fontVariationSettings: '"wdth" 100' }}>
-          ↗︎
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden focusable={false}><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" strokeWidth="3.2" strokeLinecap="butt" strokeLinejoin="miter"/><polyline points="8.5,4 20,4 20,15.5" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="butt" strokeLinejoin="miter"/></svg>
         </span>
         <span className="leading-[normal] text-[24px]">{` - the soft-robotic wearable for post-surgery knee rehabilitation.`}</span>
       </p>

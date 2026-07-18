@@ -181,7 +181,7 @@ function Frame2() {
     <div className="[word-break:break-word] absolute content-stretch flex gap-[4px] items-start justify-center left-[calc(50%+545px)] text-black top-[314px]">
       <p className="[text-underline-position:from-font] decoration-from-font decoration-solid font-['Source_Code_Pro:Medium',sans-serif] font-medium leading-[normal] relative shrink-0 text-[16px] underline whitespace-nowrap">Publications</p>
       <div className="flex flex-col font-['Instrument_Sans:Regular',sans-serif] font-normal justify-center leading-[0] relative shrink-0 text-[20px] tracking-[-1px] w-[13px]" style={{ fontVariationSettings: '"wdth" 100' }}>
-        <p className="leading-[normal]">↗︎</p>
+        <p className="leading-[normal]"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden focusable={false}><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" strokeWidth="2" strokeLinecap="butt" strokeLinejoin="miter"/><polyline points="8.5,4 20,4 20,15.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="butt" strokeLinejoin="miter"/></svg></p>
       </div>
     </div>
   );

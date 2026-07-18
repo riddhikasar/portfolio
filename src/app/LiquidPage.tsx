@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { motion } from "motion/react";
+import Arrow from "./components/Arrow";
 
 // Images
 import imgHero from "@/assets/liquid/liquid_hero.png";
@@ -26,6 +27,8 @@ const META = "#8A8A8D";
 
 const SCROLL_OFFSET_PX = 88;
 const HERO_MAX_H = "calc(100svh - 140px)";
+
+type Page = "liquid-robotics";
 
 function MetaItem({ icon, text }: { icon: string; text: string }) {
   return (
@@ -79,11 +82,13 @@ export default function LiquidPage({
   onBackToWork,
   onPrevProject,
   onNextProject,
+  setPage,
 }: {
   dark: boolean;
   onBackToWork?: () => void;
   onPrevProject?: () => void;
   onNextProject?: () => void;
+  setPage: (page: Page) => void;
 }) {
   const fg = dark ? "white" : "black";
 
@@ -127,7 +132,7 @@ export default function LiquidPage({
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className="w-full">
-          <h1 className="font-['Instrument_Sans'] font-medium leading-[1] tracking-[-0.05em] text-[clamp(40px,5vw,72px)]">
+          <h1 className="font-['Instrument_Sans'] font-normal leading-[1] tracking-[-0.05em] text-[clamp(40px,5vw,72px)]">
             Liquid Data
           </h1>
 
@@ -150,7 +155,29 @@ export default function LiquidPage({
           <span className="font-semibold">how data can become tangible</span> — dynamic, spatial, and alive.
 
           <span className="block mt-2">
-            This project is a part of <span className="font-semibold underline" style={{ textUnderlinePosition: "from-font" }}>Liquid Robotics ↗︎</span> : the intelligent robotic-bartender who makes your drinks based on how you feel. Cocktails that taste like your memories.
+            This project is a part of <motion.button
+              type="button"
+              onClick={() => setPage("liquid-robotics")}
+              className="font-semibold underline"
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                margin: 0,
+                color: "inherit",
+                cursor: "pointer",
+                textDecoration: "underline",
+                textUnderlinePosition: "from-font",
+                fontFamily: "inherit",
+                fontSize: "inherit",
+                lineHeight: "inherit",
+                letterSpacing: "inherit",
+              }}
+              whileHover={{ opacity: 0.75 }}
+              transition={{ duration: 0.15 }}
+            >
+              Liquid Robotics <Arrow size="1em" style={{ display: "inline-block", verticalAlign: "text-bottom", marginLeft: 4, marginRight: 0 }} />
+            </motion.button> : the intelligent robotic-bartender who makes your drinks based on how you feel. Cocktails that taste like your memories.
           </span>
         </div>
         
@@ -179,7 +206,7 @@ export default function LiquidPage({
               className="underline"
               style={{ textUnderlinePosition: "from-font" }}
             >
-              ACM CHI '26 ↗︎
+              {`ACM CHI '26 `}<Arrow size="1em" style={{ display: "inline-block", verticalAlign: "text-bottom", marginLeft: 4, marginRight: 0 }} />
             </a>
           </p>
         </motion.div>
@@ -227,7 +254,7 @@ export default function LiquidPage({
               className="underline"
               style={{ textUnderlinePosition: "from-font" }}
             >
-              https://liquid-data.lovable.app/ ↗︎
+              https://liquid-data.lovable.app/ <Arrow size="1em" style={{ display: "inline-block", verticalAlign: "text-bottom", marginLeft: 4, marginRight: 0 }} />
             </a>
           </p>
         </motion.div>

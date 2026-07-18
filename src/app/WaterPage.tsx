@@ -143,7 +143,7 @@ export default function WaterPage({
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className="w-full">
-          <h1 className="font-['Instrument_Sans'] font-medium leading-[1] tracking-[-0.05em] text-[clamp(40px,5vw,72px)]">
+          <h1 className="font-['Instrument_Sans'] font-normal leading-[1] tracking-[-0.05em] text-[clamp(40px,5vw,72px)]">
             Sacred Water - Data Visualization
           </h1>
 

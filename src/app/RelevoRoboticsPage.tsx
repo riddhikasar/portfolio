@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { motion } from "motion/react";
+import Arrow from "./components/Arrow";
 
 // Images
 import imgHero from "@/assets/relevo/relevorobotics_hero.png";
@@ -26,6 +27,8 @@ import iconC3 from "@/assets/relevo/c_3_r.svg";
 
 const PX = "px-5 sm:px-10 lg:px-[120px]";
 const META = "#8A8A8D";
+
+type Page = "relevo";
 
 const SCROLL_OFFSET_PX = 88;
 const HERO_MAX_H = "calc(100svh - 140px)";
@@ -82,11 +85,13 @@ export default function RelevoPage({
   onBackToWork,
   onPrevProject,
   onNextProject,
+  setPage,
 }: {
   dark: boolean;
   onBackToWork?: () => void;
   onPrevProject?: () => void;
   onNextProject?: () => void;
+  setPage: (page: Page) => void;
 }) {
   const fg = dark ? "white" : "black";
 
@@ -285,12 +290,29 @@ export default function RelevoPage({
               <span className="font-semibold">track patient progress</span>, schedule appointments when needed, and view predictions.
               <span className="block mt-4">
                 The entire product design project can be viewed here:{" "}
-                <span
-                  className="font-semibold underline"
-                  style={{ textUnderlinePosition: "from-font" }}
+                <motion.button
+                 type="button"
+                 onClick={() => setPage("relevo")}
+                 className="font-semibold underline"
+                 style={{
+                   background: "none",
+                   border: "none",
+                   padding: 0,
+                   margin: 0,
+                   color: "inherit",
+                   cursor: "pointer",
+                   textDecoration: "underline",
+                   textUnderlinePosition: "from-font",
+                   fontFamily: "inherit",
+                   fontSize: "inherit",
+                   lineHeight: "inherit",
+                   letterSpacing: "inherit",
+                 }}
+                 whileHover={{ opacity: 0.75 }}
+                 transition={{ duration: 0.15 }}
                 >
-                  Relevo Clinical Dashboard ↗
-                </span>
+                 Relevo Clinical Dashboard <Arrow size="1em" style={{ display: "inline-block", verticalAlign: "text-bottom", marginLeft: 4, marginRight: 0 }} />
+                </motion.button>
               </span>
             </div>
           </div>

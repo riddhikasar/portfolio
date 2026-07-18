@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { motion } from "motion/react";
+import Arrow from "./components/Arrow";
 
 // Images
 import imgHero from "@/assets/liquid/liquidrobotics_hero.png";
@@ -22,6 +23,8 @@ const META = "#8A8A8D";
 
 const SCROLL_OFFSET_PX = 88;
 const HERO_MAX_H = "calc(100svh - 140px)";
+
+type Page = "liquid";
 
 function MetaItem({ icon, text }: { icon: string; text: string }) {
   return (
@@ -75,11 +78,13 @@ export default function LiquidPage({
   onBackToWork,
   onPrevProject,
   onNextProject,
+  setPage,
 }: {
   dark: boolean;
   onBackToWork?: () => void;
   onPrevProject?: () => void;
   onNextProject?: () => void;
+  setPage: (page: Page) => void;
 }) {
   const fg = dark ? "white" : "black";
 
@@ -123,7 +128,7 @@ export default function LiquidPage({
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className="w-full">
-          <h1 className="font-['Instrument_Sans'] font-medium leading-[1] tracking-[-0.05em] text-[clamp(40px,5vw,72px)]">
+          <h1 className="font-['Instrument_Sans'] font-normal leading-[1] tracking-[-0.05em] text-[clamp(40px,5vw,72px)]">
             Liquid Data Robotics
           </h1>
 
@@ -146,7 +151,29 @@ export default function LiquidPage({
           <span className="font-semibold">how data can become tangible</span> — dynamic, spatial, and alive.
 
           <span className="block mt-2">
-            This project is a part of the <span className="font-semibold underline" style={{ textUnderlinePosition: "from-font" }}>Liquid Data ↗︎</span> product design case study.
+            This project is a part of the <motion.button
+              type="button"
+              onClick={() => setPage("liquid")}
+              className="font-semibold underline"
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                margin: 0,
+                color: "inherit",
+                cursor: "pointer",
+                textDecoration: "underline",
+                textUnderlinePosition: "from-font",
+                fontFamily: "inherit",
+                fontSize: "inherit",
+                lineHeight: "inherit",
+                letterSpacing: "inherit",
+              }}
+              whileHover={{ opacity: 0.75 }}
+              transition={{ duration: 0.15 }}
+            >
+              Liquid Data <Arrow size="1em" style={{ display: "inline-block", verticalAlign: "text-bottom", marginLeft: 4, marginRight: 0 }} />
+            </motion.button> product design case study.
           </span>
           <span className="mt-2">
             You can also visit the live website I developed for a virtual Liquid Data experience here:
@@ -158,7 +185,7 @@ export default function LiquidPage({
               className="font-semibold underline"
               style={{ textUnderlinePosition: "from-font" }}
             >
-              liquid-data.lovable.app ↗︎
+              liquid-data.lovable.app <Arrow size="1em" style={{ display: "inline-block", verticalAlign: "text-bottom", marginLeft: 4, marginRight: 0 }} />
             </a>
         </div>
         
@@ -187,7 +214,7 @@ export default function LiquidPage({
               className="underline"
               style={{ textUnderlinePosition: "from-font" }}
             >
-              ACM CHI '26 ↗︎
+              {`ACM CHI '26 `}<Arrow size="1em" style={{ display: "inline-block", verticalAlign: "text-bottom", marginLeft: 4, marginRight: 0 }} />
             </a>
           </p>
         </motion.div>

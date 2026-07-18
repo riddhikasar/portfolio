@@ -190,7 +190,7 @@ function Frame8() {
         </span>
         <span className="leading-[normal] text-[24px]">{` `}</span>
         <span className="font-['Instrument_Sans:Medium',sans-serif] font-medium leading-[normal] text-[26px]" style={{ fontVariationSettings: '"wdth" 100' }}>
-          ↗︎
+          <svg viewBox="0 0 24 24" width="32" height="32" aria-hidden focusable={false}><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" strokeWidth="2" strokeLinecap="butt" strokeLinejoin="miter"/><polyline points="8.5,4 20,4 20,15.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="butt" strokeLinejoin="miter"/></svg>
         </span>
         <span className="leading-[normal] text-[24px]">{` - the intelligent robotic-bartender who makes your drinks based on how you feel - cocktails that taste like your memories.`}</span>
       </p>
@@ -419,7 +419,7 @@ export default function Liquid() {
           <span className="leading-[1.1] text-[72px]">{` `}</span>
           <span className="[text-decoration-skip-ink:none] [text-underline-position:from-font] decoration-from-font decoration-solid leading-[1.1] text-[#fc2872] text-[72px] underline">ACM CHI ‘26</span>
           <span className="leading-[1.1] text-[#fc2872] text-[72px]">{`  `}</span>
-          <span className="leading-[1.1] text-[#fc2872] text-[82px]">↗︎</span>
+          <span className="leading-[1.1] text-[#fc2872] text-[82px]"><svg viewBox="0 0 24 24" width="82" height="82" aria-hidden focusable={false"><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" strokeWidth="5" strokeLinecap="butt" strokeLinejoin="miter"/><polyline points="8.5,4 20,4 20,15.5" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="butt" strokeLinejoin="miter"/></svg></span>
         </p>
       </div>
       <div className="-translate-x-1/2 -translate-y-full [word-break:break-word] absolute flex flex-col font-['Instrument_Sans:Medium',sans-serif] font-medium justify-end leading-[0] left-[720px] text-[#fc2872] text-[72px] text-center top-[2845px] tracking-[-3.6px] w-[1200px]" style={{ fontVariationSettings: '"wdth" 100' }}>

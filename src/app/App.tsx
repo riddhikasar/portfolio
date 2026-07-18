@@ -24,6 +24,7 @@ import thumbEpicure from "@/assets/thumbnails/epicure_thumbnail.png";
 
 // ── About images ──────────────────────────────────────────────────────────────
 import MorphField from "./components/MorphField";
+import Arrow from "./components/Arrow";
 
 import sky from "@/assets/aboutMorph/sky.png";
 import bird from "@/assets/aboutMorph/bird.png";
@@ -250,7 +251,7 @@ function Header({ dark, page, setPage, setTab, toggleDark }: {
     <header className="flex items-center justify-between px-[clamp(16px,2.9vw,42px)] py-[12px] gap-[clamp(8px,2vw,24px)] transition-colors duration-300">
       <motion.button
         onClick={() => setPage("about")}
-        className="font-['Source_Code_Pro'] font-normal uppercase leading-[1.45] cursor-pointer shrink-0 whitespace-nowrap"
+        className="font-['Source_Code_Pro'] font-medium uppercase leading-[1.45] cursor-pointer shrink-0 whitespace-nowrap"
         style={{ color: fg, fontSize: "clamp(13px,1.25vw,18px)", letterSpacing: "-0.09px" }}
         whileHover={{ opacity: 0.65 }}
         transition={{ duration: 0.15 }}
@@ -262,7 +263,7 @@ function Header({ dark, page, setPage, setTab, toggleDark }: {
 
         <motion.button
           onClick={() => { setPage("work"); setTab("all"); }}
-          className="font-['Source_Code_Pro'] font-normal leading-[1.45] cursor-pointer whitespace-nowrap"
+          className="font-['Source_Code_Pro'] font-medium leading-[1.45] cursor-pointer whitespace-nowrap"
           style={{ color: fg, fontSize: "clamp(11px,0.97vw,14px)", letterSpacing: "-0.07px", textDecoration: page === "work" ? "underline" : "none", textUnderlinePosition: "from-font" }}
           whileHover={{ opacity: 0.65 }}
           transition={{ duration: 0.15 }}
@@ -272,7 +273,7 @@ function Header({ dark, page, setPage, setTab, toggleDark }: {
 
         <motion.button
           onClick={() => setPage("about")}
-          className="font-['Source_Code_Pro'] font-normal leading-[1.45] cursor-pointer whitespace-nowrap"
+          className="font-['Source_Code_Pro'] font-medium leading-[1.45] cursor-pointer whitespace-nowrap"
           style={{ color: fg, fontSize: "clamp(11px,0.97vw,14px)", letterSpacing: "-0.07px", textDecoration: page === "about" ? "underline" : "none", textUnderlinePosition: "from-font" }}
           whileHover={{ opacity: 0.65 }}
           transition={{ duration: 0.15 }}
@@ -390,7 +391,7 @@ function FilterBar({ dark, activeTab, setTab, isStuck }: {
           className="font-['Instrument_Sans'] font-normal tracking-[-1px]"
           style={{ fontVariationSettings: '"wdth" 100', fontSize: "clamp(14px,1.39vw,20px)" }}
         >
-          ↗︎
+          <Arrow style={{ width: "clamp(14px,1.4vw,20px)", height: "auto", display: "inline-block", marginLeft: 6 }} />
         </span>
       </motion.a>
     </div>
@@ -558,17 +559,22 @@ function SpecPill({ label, tab, border, fg, hoverBg, setPage, setTab }: {
       onClick={() => { setPage("work"); setTab(tab); }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      className="flex items-center justify-center px-[18px] py-[12px] rounded-[24px] shrink-0 cursor-pointer"
+      className="flex items-center justify-center rounded-[24px] cursor-pointer shrink-0"
       style={{
+        padding: "clamp(8px,0.83vw,12px) clamp(12px,1.25vw,18px)",
         border,
         color: hovered ? "black" : fg,
         backgroundColor: hovered ? hoverBg : "transparent",
         transition: "background-color 0.18s ease, color 0.18s ease",
+        fontFamily: "'Source Code Pro', monospace",
+        fontWeight: 600,
+        fontSize: "clamp(12px,1.11vw,16px)",
+        whiteSpace: "nowrap",
       }}
       whileTap={{ scale: 0.96 }}
       transition={{ duration: 0.15 }}
     >
-      <span className="font-['Source_Code_Pro'] font-semibold text-[18px] whitespace-nowrap">{label}</span>
+      {label}
     </motion.button>
   );
 }
@@ -695,7 +701,7 @@ function AboutPage({ dark, setPage, setTab }: { dark: boolean; setPage: (p: Page
             whileHover={{ opacity: 0.65 }}
             transition={{ duration: 0.15 }}
           >Harvard</motion.a>
-          {" ↗"}
+          <Arrow style={{ width: "clamp(32px,3.5vw,56px)", height: "auto", display: "inline-block", verticalAlign: "middle", marginLeft: 8 }} />
         </motion.p>
 
       </div>
@@ -827,7 +833,7 @@ function AboutPage({ dark, setPage, setTab }: { dark: boolean; setPage: (p: Page
           >
             riddhikasar02@gmail.com
           </motion.a>
-          {" ↗︎ "}
+          <Arrow style={{ width: "clamp(18px,1.8vw,28px)", height: "auto", display: "inline-block", verticalAlign: "middle", marginLeft: 6 }} />
         </p>
       </motion.div>
 
@@ -885,7 +891,19 @@ function AboutPage({ dark, setPage, setTab }: { dark: boolean; setPage: (p: Page
 // APP ROOT
 // ─────────────────────────────────────────────────────────────────────────────
 // Project navigation order
-const PROJECT_ORDER: Page[] = ["noonchi", "liquid", "relevo", "water", "trod", "liquid-robotics", "relevo-robotics", "link", "epicure"];
+const ALL_ORDER: Page[] = [
+  "noonchi",
+  "trod",
+  "liquid",
+  "liquid-robotics",
+  "relevo",
+  "relevo-robotics",
+  "water",
+  "epicure",
+  "link",
+];
+const DIGITAL_ORDER: Page[] = ["noonchi", "liquid", "relevo", "water"];
+const ROBOTICS_ORDER: Page[] = ["trod", "liquid-robotics", "relevo-robotics", "epicure", "link"];
 
 export default function App() {
   const [page, setPage] = useState<Page>("work");
@@ -899,18 +917,33 @@ export default function App() {
     window.scrollTo(0, 0);
   }, [page]);
 
-  // Get previous/next project handlers
-  const currentProjectIndex = PROJECT_ORDER.indexOf(page);
-  const hasPrevProject = currentProjectIndex > 0;
-  const hasNextProject = currentProjectIndex < PROJECT_ORDER.length - 1;
+  // Get previous/next project handlers — respect activeTab when set; otherwise infer from current project
+  function getContextOrder(): Page[] {
+    // If viewing the Work page, use the full order
+    if (page === "work") return ALL_ORDER;
 
-  const handlePrevProject = hasPrevProject ? () => setPage(PROJECT_ORDER[currentProjectIndex - 1]) : undefined;
-  const handleNextProject = hasNextProject ? () => setPage(PROJECT_ORDER[currentProjectIndex + 1]) : undefined;
+    // Prefer the activeTab if it's set to digital or robotics
+    if (activeTab === "digital") return DIGITAL_ORDER;
+    if (activeTab === "robotics") return ROBOTICS_ORDER;
+
+    // Otherwise infer from the current project page
+    if (DIGITAL_ORDER.includes(page as Page)) return DIGITAL_ORDER;
+    if (ROBOTICS_ORDER.includes(page as Page)) return ROBOTICS_ORDER;
+    return ALL_ORDER;
+  }
+
+  const order = getContextOrder();
+  const currentProjectIndex = order.indexOf(page as Page);
+  const hasPrevProject = currentProjectIndex > 0;
+  const hasNextProject = currentProjectIndex >= 0 && currentProjectIndex < order.length - 1;
+
+  const handlePrevProject = hasPrevProject ? () => setPage(order[currentProjectIndex - 1]) : undefined;
+  const handleNextProject = hasNextProject ? () => setPage(order[currentProjectIndex + 1]) : undefined;
 
   return (
     <div
       className="min-h-screen transition-colors duration-300"
-      style={{ backgroundColor: bgColor }}
+      style={{ backgroundColor: bgColor, WebkitFontSmoothing: "antialiased", wordBreak: "break-word", overflowWrap: "anywhere", lineHeight: 1.35 }}
     >
       {/* Header stays in normal document flow */}
       <div
@@ -938,11 +971,11 @@ export default function App() {
           </motion.div>
         ) : page === "liquid" ? (
           <motion.div key="liquid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <LiquidPage dark={dark} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
+            <LiquidPage dark={dark} setPage={setPage} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
           </motion.div>
         ) : page === "relevo" ? (
           <motion.div key="relevo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <RelevoPage dark={dark} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
+            <RelevoPage dark={dark} setPage={setPage} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
           </motion.div>
         ) : page === "water" ? (
           <motion.div key="water" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
@@ -954,11 +987,11 @@ export default function App() {
           </motion.div>
         ) : page === "liquid-robotics" ? (
           <motion.div key="liquid-robotics" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <LiquidRoboticsPage dark={dark} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
+            <LiquidRoboticsPage dark={dark} setPage={setPage} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
           </motion.div>
         ) : page === "relevo-robotics" ? (
           <motion.div key="relevo-robotics" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <RelevoRoboticsPage dark={dark} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
+            <RelevoRoboticsPage dark={dark} setPage={setPage} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
           </motion.div>
         ) : page === "link" ? (
           <motion.div key="link" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
