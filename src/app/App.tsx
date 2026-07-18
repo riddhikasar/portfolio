@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Moon, Sun } from "lucide-react";
 import NoonchiPage from "./NoonchiPage";
@@ -36,6 +36,29 @@ import waves from "@/assets/aboutMorph/waves.png";
 // ─────────────────────────────────────────────────────────────────────────────
 type Page = "work" | "about" | "noonchi" | "liquid" | "relevo" | "water" | "trod" | "liquid-robotics" | "relevo-robotics" | "link" | "epicure";
 type Tab = "all" | "digital" | "robotics";
+
+// ── URL ↔ page/tab helpers ────────────────────────────────────────────────────
+const PAGE_TO_PATH: Record<Page, string> = {
+  work: "/", about: "/about",
+  noonchi: "/noonchi", liquid: "/liquid", relevo: "/relevo",
+  water: "/water", trod: "/trod",
+  "liquid-robotics": "/liquid-robotics",
+  "relevo-robotics": "/relevo-robotics",
+  link: "/link", epicure: "/epicure",
+};
+
+function pathToPage(pathname: string): Page {
+  const found = (Object.entries(PAGE_TO_PATH) as [Page, string][])
+    .find(([, p]) => p === pathname);
+  return found?.[0] ?? "work";
+}
+
+function buildPath(p: Page, t?: Tab) {
+  const base = PAGE_TO_PATH[p] ?? "/";
+  if (p === "work" && t && t !== "all") return `${base}?tab=${t}`;
+  return base;
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────────────────────
@@ -906,11 +929,56 @@ const DIGITAL_ORDER: Page[] = ["noonchi", "liquid", "relevo", "water"];
 const ROBOTICS_ORDER: Page[] = ["trod", "liquid-robotics", "relevo-robotics", "epicure", "link"];
 
 export default function App() {
-  const [page, setPage] = useState<Page>("work");
-  const [activeTab, setActiveTab] = useState<Tab>("all");
+  // Initialize state from the current URL so direct links/refresh work
+  const [page, setPageRaw] = useState<Page>(() => pathToPage(window.location.pathname));
+  const [activeTab, setTabRaw] = useState<Tab>(() => {
+    const t = new URLSearchParams(window.location.search).get("tab") as Tab | null;
+    return t ?? "all";
+  });
   const [dark, setDark] = useState(false);
 
   const bgColor = dark ? "#000000" : "#ffffff";
+
+  // Stamp the initial history entry with state so popstate can read it back
+  useEffect(() => {
+    history.replaceState(
+      { page, tab: activeTab },
+      "",
+      buildPath(page, activeTab),
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Handle browser back / forward
+  useEffect(() => {
+    function onPop(e: PopStateEvent) {
+      const s = e.state as { page: Page; tab: Tab } | null;
+      if (s) {
+        setPageRaw(s.page);
+        setTabRaw(s.tab ?? "all");
+      } else {
+        setPageRaw(pathToPage(window.location.pathname));
+        const t = new URLSearchParams(window.location.search).get("tab") as Tab | null;
+        setTabRaw(t ?? "all");
+      }
+    }
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // navigate — pushes a new browser history entry and updates React state
+  const navigate = useCallback((p: Page, t?: Tab) => {
+    const tab = t ?? activeTab;
+    history.pushState({ page: p, tab }, "", buildPath(p, p === "work" ? tab : undefined));
+    setPageRaw(p);
+    if (t !== undefined) setTabRaw(t);
+  }, [activeTab]);
+
+  // setActiveTab — replaces the current history entry (tab change isn't its own undo step)
+  const setActiveTab = useCallback((t: Tab) => {
+    setTabRaw(t);
+    history.replaceState({ page, tab: t }, "", buildPath(page, t));
+  }, [page]);
 
   // Scroll to top whenever page changes
   useEffect(() => {
@@ -937,8 +1005,8 @@ export default function App() {
   const hasPrevProject = currentProjectIndex > 0;
   const hasNextProject = currentProjectIndex >= 0 && currentProjectIndex < order.length - 1;
 
-  const handlePrevProject = hasPrevProject ? () => setPage(order[currentProjectIndex - 1]) : undefined;
-  const handleNextProject = hasNextProject ? () => setPage(order[currentProjectIndex + 1]) : undefined;
+  const handlePrevProject = hasPrevProject ? () => navigate(order[currentProjectIndex - 1]) : undefined;
+  const handleNextProject = hasNextProject ? () => navigate(order[currentProjectIndex + 1]) : undefined;
 
   return (
     <div
@@ -953,7 +1021,7 @@ export default function App() {
         <Header
           dark={dark}
           page={page}
-          setPage={setPage}
+          setPage={navigate}
           setTab={setActiveTab}
           toggleDark={() => setDark(d => !d)}
         />
@@ -963,7 +1031,7 @@ export default function App() {
       <AnimatePresence mode="wait">
         {page === "work" ? (
           <motion.div key="work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <WorkPage dark={dark} activeTab={activeTab} setTab={setActiveTab} setPage={setPage} />
+            <WorkPage dark={dark} activeTab={activeTab} setTab={setActiveTab} setPage={navigate} />
           </motion.div>
         ) : page === "noonchi" ? (
           <motion.div key="noonchi" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
@@ -971,11 +1039,11 @@ export default function App() {
           </motion.div>
         ) : page === "liquid" ? (
           <motion.div key="liquid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <LiquidPage dark={dark} setPage={setPage} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
+            <LiquidPage dark={dark} setPage={navigate} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
           </motion.div>
         ) : page === "relevo" ? (
           <motion.div key="relevo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <RelevoPage dark={dark} setPage={setPage} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
+            <RelevoPage dark={dark} setPage={navigate} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
           </motion.div>
         ) : page === "water" ? (
           <motion.div key="water" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
@@ -987,11 +1055,11 @@ export default function App() {
           </motion.div>
         ) : page === "liquid-robotics" ? (
           <motion.div key="liquid-robotics" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <LiquidRoboticsPage dark={dark} setPage={setPage} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
+            <LiquidRoboticsPage dark={dark} setPage={navigate} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
           </motion.div>
         ) : page === "relevo-robotics" ? (
           <motion.div key="relevo-robotics" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <RelevoRoboticsPage dark={dark} setPage={setPage} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
+            <RelevoRoboticsPage dark={dark} setPage={navigate} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
           </motion.div>
         ) : page === "link" ? (
           <motion.div key="link" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
@@ -1003,7 +1071,7 @@ export default function App() {
           </motion.div>
         ) : (
           <motion.div key="about" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <AboutPage dark={dark} setPage={setPage} setTab={setActiveTab} />
+            <AboutPage dark={dark} setPage={navigate} setTab={setActiveTab} />
           </motion.div>
         )}
       </AnimatePresence>
