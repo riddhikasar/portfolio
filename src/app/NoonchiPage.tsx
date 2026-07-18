@@ -152,7 +152,7 @@ export default function NoonchiPage({
 
           <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-3">
             <MetaItem icon={iconTeam} text="Team: 2" />
-            <MetaItem icon={iconRole} text="Role: Founder, Design + Dev" />
+            <MetaItem icon={iconRole} text="Role: Co-Founder, Design + Dev" />
             <MetaItem icon={iconTime} text="Time: 1 yr" />
           </div>
         </div>

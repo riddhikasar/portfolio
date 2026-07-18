@@ -69,7 +69,7 @@ function Section({
       }}
       initial={{ opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.22 }}
+      viewport={{ once: true, amount: 0.06 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div className="w-full">
@@ -219,7 +219,7 @@ export default function WaterPage({
                 >
                   <img
                     src={src}
-                    alt={`Noonchi screen ${i + 1}`}
+                    alt={`Sacred water screen ${i + 1}`}
                     className="w-full h-auto block"
                     loading="lazy"
                   />
@@ -241,12 +241,15 @@ export default function WaterPage({
             Finally, after many searches, we narrowed down on three books to be used as our primary sources of information.
           </div>
 
-          <div className="mt-[42px] w-full overflow-hidden bg-white dark:bg-black">
-            <img
-              src={imgBook}
-              alt="Books"
-              className="w-full h-auto block object-cover"
-            />
+          <div
+              className="mt-[42px] w-full overflow-hidden"
+              style={{ backgroundColor: dark ? "#000" : "#fff" }}
+            >
+              <img
+                src={imgBook}
+                alt="Books"
+                className="w-full h-auto block object-contain"
+              />
           </div>
 
           <div className="mt-[92px] leading-relaxed font-semibold">

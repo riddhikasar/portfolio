@@ -210,24 +210,24 @@ function RelevoRoboticsCard({ onClick }: { onClick?: () => void }) {
   );
 }
 
-function LinkCard({ onClick }: { onClick?: () => void }) {
-  return (
-    <CardWrapper bg="transparent" onClick={onClick}>
-      <img
-        src={thumbLink}
-        alt="Link project"
-        className="absolute inset-0 w-full h-full object-cover max-w-none pointer-events-none"
-      />
-    </CardWrapper>
-  );
-}
-
 function EpicureCard({ onClick }: { onClick?: () => void }) {
   return (
     <CardWrapper bg="transparent" onClick={onClick}>
       <img
         src={thumbEpicure}
         alt="Epicure"
+        className="absolute inset-0 w-full h-full object-cover max-w-none pointer-events-none"
+      />
+    </CardWrapper>
+  );
+}
+
+function LinkCard({ onClick }: { onClick?: () => void }) {
+  return (
+    <CardWrapper bg="transparent" onClick={onClick}>
+      <img
+        src={thumbLink}
+        alt="Link project"
         className="absolute inset-0 w-full h-full object-cover max-w-none pointer-events-none"
       />
     </CardWrapper>
@@ -434,8 +434,8 @@ const roboticsCards = [
   { key: "trod", name: "TROD", el: <TrodCard onClick={() => setPage("trod")} /> },
   { key: "liquid-rob", name: "Liquid Robotics", el: <LiquidRoboticsCard onClick={() => setPage("liquid-robotics")} /> },
   { key: "relevo-rob", name: "Relevo Robotics", el: <RelevoRoboticsCard onClick={() => setPage("relevo-robotics")} /> },
-  { key: "link", name: "Link", el: <LinkCard onClick={() => setPage("link")} /> },
   { key: "epicure", name: "Epicure", el: <EpicureCard onClick={() => setPage("epicure")} /> },
+  { key: "link", name: "Link", el: <LinkCard onClick={() => setPage("link")} /> },
 ];
 
 const allCards = [
