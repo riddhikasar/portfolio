@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "postbuild": "node --input-type=module -e \"import { copyFileSync } from 'node:fs'; copyFileSync('dist/index.html', 'dist/404.html');\"",
+    "postbuild": "node --input-type=module -e \"import { copyFileSync, closeSync, openSync } from 'node:fs'; copyFileSync('dist/index.html', 'dist/404.html'); closeSync(openSync('dist/.nojekyll', 'w'));\"",
     "dev": "vite",
-    "predeploy": "pnpm build",
+    "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
