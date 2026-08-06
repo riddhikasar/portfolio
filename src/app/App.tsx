@@ -38,6 +38,9 @@ type Page = "work" | "about" | "noonchi" | "liquid" | "relevo" | "water" | "trod
 type Tab = "all" | "digital" | "robotics";
 
 // ── URL ↔ page/tab helpers ────────────────────────────────────────────────────
+const RAW_BASE_PATH = import.meta.env.BASE_URL ?? "/";
+const BASE_PATH = RAW_BASE_PATH === "/" ? "" : RAW_BASE_PATH.replace(/\/$/, "");
+
 const PAGE_TO_PATH: Record<Page, string> = {
   work: "/", about: "/about",
   noonchi: "/noonchi", liquid: "/liquid", relevo: "/relevo",
@@ -47,16 +50,31 @@ const PAGE_TO_PATH: Record<Page, string> = {
   link: "/link", epicure: "/epicure",
 };
 
+function normalizeAppPath(pathname: string): string {
+  const pathWithoutBase = BASE_PATH && pathname.startsWith(BASE_PATH)
+    ? pathname.slice(BASE_PATH.length)
+    : pathname;
+  if (!pathWithoutBase || pathWithoutBase === "/") return "/";
+  return pathWithoutBase.startsWith("/") ? pathWithoutBase : `/${pathWithoutBase}`;
+}
+
+function withBasePath(pathWithQuery: string): string {
+  const [pathname, search = ""] = pathWithQuery.split("?");
+  const resolvedPath = BASE_PATH ? `${BASE_PATH}${pathname}` : pathname;
+  return search ? `${resolvedPath}?${search}` : resolvedPath;
+}
+
 function pathToPage(pathname: string): Page {
+  const normalizedPath = normalizeAppPath(pathname);
   const found = (Object.entries(PAGE_TO_PATH) as [Page, string][])
-    .find(([, p]) => p === pathname);
+    .find(([, p]) => p === normalizedPath);
   return found?.[0] ?? "work";
 }
 
 function buildPath(p: Page, t?: Tab) {
   const base = PAGE_TO_PATH[p] ?? "/";
-  if (p === "work" && t && t !== "all") return `${base}?tab=${t}`;
-  return base;
+  if (p === "work" && t && t !== "all") return withBasePath(`${base}?tab=${t}`);
+  return withBasePath(base);
 }
 
 

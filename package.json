@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "postbuild": "node --input-type=module -e \"import { copyFileSync } from 'node:fs'; copyFileSync('dist/index.html', 'dist/404.html');\"",
     "dev": "vite",
     "predeploy": "pnpm build",
     "deploy": "gh-pages -d dist"
