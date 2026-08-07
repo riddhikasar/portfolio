@@ -291,7 +291,7 @@ function Header({ dark, page, setPage, setTab, toggleDark }: {
   return (
     <header className="flex items-center justify-between px-[clamp(16px,2.9vw,42px)] py-[12px] gap-[clamp(8px,2vw,24px)] transition-colors duration-300">
       <motion.button
-        onClick={() => setPage("about")}
+        onClick={() => setPage("work")}
         className="font-['Source_Code_Pro'] font-medium uppercase leading-[1.45] cursor-pointer shrink-0 whitespace-nowrap"
         style={{ color: fg, fontSize: "clamp(13px,1.25vw,18px)", letterSpacing: "-0.09px" }}
         whileHover={{ opacity: 0.65 }}
