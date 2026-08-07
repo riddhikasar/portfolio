@@ -13,3 +13,5 @@ minimumReleaseAge: 10080
 allowBuilds:
   '@tailwindcss/oxide': true
   esbuild: true
+overrides:
+  vite: 6.3.5
