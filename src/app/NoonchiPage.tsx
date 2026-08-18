@@ -257,44 +257,6 @@ export default function NoonchiPage({
         </motion.div>
       </Section>
 
-      <Section dividerColor={dividerColor} id="final-solution" title="Final Solution">
-        <div style={{ padding: "62.81% 0 0 0", position: "relative" }}>
-          <iframe
-            src="https://player.vimeo.com/video/1210330585?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1"
-            frameBorder={0}
-            allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-            referrerPolicy="strict-origin-when-cross-origin"
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
-            title="Noonchi App Demo"
-            allowFullScreen
-          />
-        </div>
-
-        <div style={{ padding: "62.81% 0 0 0", position: "relative" }}>
-          <iframe
-            src="https://player.vimeo.com/video/1210330584?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1"
-            frameBorder={0}
-            allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-            referrerPolicy="strict-origin-when-cross-origin"
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
-            title="Noonchi Watch Demo"
-            allowFullScreen
-          />
-        </div>
-
-        <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
-          <iframe
-            src="https://player.vimeo.com/video/1210330290?badge=0&autopause=0&player_id=0&app_id=58479"
-            frameBorder={0}
-            allow="fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-            referrerPolicy="strict-origin-when-cross-origin"
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
-            title="Noonchi"
-            allowFullScreen
-          />
-        </div>
-      </Section>
-
       <Section dividerColor={dividerColor} title="How Noonchi Works">
         <p className="whitespace-normal">
           Noonchi has three layers — a physical wearable system, a digital desktop application, and a guiding&nbsp;framework.
@@ -424,6 +386,44 @@ export default function NoonchiPage({
           </div>
         </div>
       </motion.section>
+
+            <Section dividerColor={dividerColor} id="final-solution" title="Final Solution">
+        <div style={{ padding: "62.81% 0 0 0", position: "relative" }}>
+          <iframe
+            src="https://player.vimeo.com/video/1210330585?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1"
+            frameBorder={0}
+            allow="autoplay; loop; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+            title="Noonchi App Demo"
+            allowFullScreen
+          />
+        </div>
+
+        <div style={{ padding: "62.81% 0 0 0", position: "relative" }}>
+          <iframe
+            src="https://player.vimeo.com/video/1210330584?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1"
+            frameBorder={0}
+            allow="autoplay; loop; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+            title="Noonchi Watch Demo"
+            allowFullScreen
+          />
+        </div>
+
+        <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
+          <iframe
+            src="https://player.vimeo.com/video/1210330290?badge=0&autopause=0&player_id=0&app_id=58479"
+            frameBorder={0}
+            allow="fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+            title="Noonchi"
+            allowFullScreen
+          />
+        </div>
+      </Section>
 
       <Section dividerColor={dividerColor} id="concepts-applied" title="Concepts Applied">
         <div className="mt-[42px] grid grid-cols-1 md:grid-cols-3 gap-[42px]">
