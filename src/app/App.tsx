@@ -407,7 +407,6 @@ function FilterBar({ dark, activeTab, setTab, isStuck }: {
     <div className="flex flex-col items-start gap-[12px] lg:flex-row lg:items-center lg:justify-between">
       {/* Left: pills */}
       <div className="flex flex-wrap items-center gap-[12px] lg:gap-[18px]">
-        <Pill label="All" tab="all" />
         <Pill label="Digital Interfaces" tab="digital" />
         <Pill label="Robotic Prototypes" tab="robotics" />
       </div>

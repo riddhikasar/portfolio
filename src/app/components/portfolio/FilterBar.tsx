@@ -61,9 +61,7 @@ export function FilterBar({
   const theme = getTheme(dark);
 
   return (
-    <div className="grid w-full grid-cols-1 items-center gap-3 lg:grid-cols-[auto_1fr_auto] lg:gap-[18px]">
-      <Pill label="All" active={activeTab === "all"} dark={dark} isStuck={isStuck} onClick={() => setTab("all")} />
-
+    <div className="grid w-full grid-cols-1 items-center gap-3 lg:grid-cols-[1fr_auto] lg:gap-[18px]">
       <div className="flex flex-wrap items-center justify-start gap-[12px] lg:justify-center lg:gap-[18px]">
         <Pill
           label="Digital Interfaces"
@@ -78,13 +76,6 @@ export function FilterBar({
           dark={dark}
           isStuck={isStuck}
           onClick={() => setTab("robotics")}
-        />
-        <Pill
-          label="Physical Systems"
-          active={activeTab === "physical"}
-          dark={dark}
-          isStuck={isStuck}
-          onClick={() => setTab("physical")}
         />
       </div>
 
