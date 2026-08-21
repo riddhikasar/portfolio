@@ -303,7 +303,7 @@ function Header({ dark, page, setPage, setTab, toggleDark }: {
       <nav className="flex gap-[clamp(12px,1.67vw,24px)] items-center shrink-0">
 
         <motion.button
-          onClick={() => { setPage("work"); setTab("all"); }}
+          onClick={() => { setPage("work"); setTab("digital"); }}
           className="font-['Source_Code_Pro'] font-medium leading-[1.45] cursor-pointer whitespace-nowrap"
           style={{ color: fg, fontSize: "clamp(11px,0.97vw,14px)", letterSpacing: "-0.07px", textDecoration: page === "work" ? "underline" : "none", textUnderlinePosition: "from-font" }}
           whileHover={{ opacity: 0.65 }}
@@ -449,6 +449,11 @@ function WorkPage({ dark, activeTab, setTab, setPage }: {
 }) {
   const accentColor = dark ? "#ffea00" : "#1eb81b";
   const textColor = dark ? "white" : "black";
+  const heading = activeTab === "digital"
+    ? "Designing Digital Interfaces for Human-AI Collaboration"
+    : activeTab === "robotics"
+      ? "Building Physical AI for Robotics and HRI"
+      : "Designing Digital Interfaces for Robotic and Intelligent Systems";
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [isStuck, setIsStuck] = useState(false);
@@ -516,8 +521,7 @@ const visibleCards =
             fontVariationSettings: '"wdth" 100',
           }}
         >
-          Designing Digital Interfaces for Robotic and <br>
-          </br> Intelligent Systems
+          {heading}
         </h1>
 
       </div>
@@ -950,7 +954,7 @@ export default function App() {
   const [page, setPageRaw] = useState<Page>(() => pathToPage(window.location.pathname));
   const [activeTab, setTabRaw] = useState<Tab>(() => {
     const t = new URLSearchParams(window.location.search).get("tab") as Tab | null;
-    return t ?? "all";
+    return t === "robotics" ? "robotics" : "digital";
   });
   const [dark, setDark] = useState(false);
 
@@ -972,11 +976,11 @@ export default function App() {
       const s = e.state as { page: Page; tab: Tab } | null;
       if (s) {
         setPageRaw(s.page);
-        setTabRaw(s.tab ?? "all");
+        setTabRaw(s.tab === "robotics" ? "robotics" : "digital");
       } else {
         setPageRaw(pathToPage(window.location.pathname));
         const t = new URLSearchParams(window.location.search).get("tab") as Tab | null;
-        setTabRaw(t ?? "all");
+        setTabRaw(t === "robotics" ? "robotics" : "digital");
       }
     }
     window.addEventListener("popstate", onPop);
