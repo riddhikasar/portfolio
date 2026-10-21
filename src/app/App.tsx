@@ -413,7 +413,7 @@ function FilterBar({ dark, activeTab, setTab, isStuck }: {
 
       {/* Right: publications */}
       <motion.a
-        href="https://scholar.google.com/citations?user=paNfxVcAAAAJ&hl=en"
+        href="https://orcid.org/0009-0003-3207-176X"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-[4px] cursor-pointer shrink-0"
@@ -449,11 +449,7 @@ function WorkPage({ dark, activeTab, setTab, setPage }: {
 }) {
   const accentColor = dark ? "#ffea00" : "#1eb81b";
   const textColor = dark ? "white" : "black";
-  const heading = activeTab === "digital"
-    ? "Designing Digital Interfaces for Human-AI Collaboration"
-    : activeTab === "robotics"
-      ? "Building Physical AI for Robotics and HRI"
-      : "Designing Digital Interfaces for Robotic and Intelligent Systems";
+  const heading = "Designing interfaces for humans to talk, interact, and collaborate with intelligent systems."
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [isStuck, setIsStuck] = useState(false);
@@ -471,15 +467,15 @@ function WorkPage({ dark, activeTab, setTab, setPage }: {
   // Define cards per tab (with unique keys and sort names)
   const digitalCards = [
   { key: "noonchi", name: "Noonchi", el: <NoonchiCard dark={dark} onClick={() => setPage("noonchi")} /> },
-  { key: "liquid", name: "Liquid Data", el: <LiquidDigitalCard dark={dark} onClick={() => setPage("liquid")} /> },
   { key: "relevo", name: "Relevo", el: <RelevoDigitalCard dark={dark} onClick={() => setPage("relevo")} /> },
+  { key: "liquid", name: "Liquid Data", el: <LiquidDigitalCard dark={dark} onClick={() => setPage("liquid")} /> },
   { key: "water", name: "Sacred Water", el: <WaterCard dark={dark} onClick={() => setPage("water")} /> },
 ];
 
 const roboticsCards = [
   { key: "trod", name: "TROD", el: <TrodCard onClick={() => setPage("trod")} /> },
-  { key: "liquid-rob", name: "Liquid Robotics", el: <LiquidRoboticsCard onClick={() => setPage("liquid-robotics")} /> },
   { key: "relevo-rob", name: "Relevo Robotics", el: <RelevoRoboticsCard onClick={() => setPage("relevo-robotics")} /> },
+  { key: "liquid-rob", name: "Liquid Robotics", el: <LiquidRoboticsCard onClick={() => setPage("liquid-robotics")} /> },
   { key: "epicure", name: "Epicure", el: <EpicureCard onClick={() => setPage("epicure")} /> },
   { key: "link", name: "Link", el: <LinkCard onClick={() => setPage("link")} /> },
 ];
