@@ -942,8 +942,8 @@ const ALL_ORDER: Page[] = [
   "epicure",
   "link",
 ];
-const DIGITAL_ORDER: Page[] = ["noonchi", "liquid", "relevo", "water"];
-const ROBOTICS_ORDER: Page[] = ["trod", "liquid-robotics", "relevo-robotics", "epicure", "link"];
+const DIGITAL_ORDER: Page[] = ["noonchi", "relevo", "liquid", "water"];
+const ROBOTICS_ORDER: Page[] = ["trod", "relevo-robotics", "liquid-robotics", "epicure", "link"];
 
 export default function App() {
   // Initialize state from the current URL so direct links/refresh work
@@ -1007,13 +1007,9 @@ export default function App() {
     // If viewing the Work page, use the full order
     if (page === "work") return ALL_ORDER;
 
-    // Prefer the activeTab if it's set to digital or robotics
-    if (activeTab === "digital") return DIGITAL_ORDER;
-    if (activeTab === "robotics") return ROBOTICS_ORDER;
-
-    // Otherwise infer from the current project page
-    if (DIGITAL_ORDER.includes(page as Page)) return DIGITAL_ORDER;
-    if (ROBOTICS_ORDER.includes(page as Page)) return ROBOTICS_ORDER;
+    // Use the current project to select its tab order, including on direct links.
+    if (DIGITAL_ORDER.includes(page)) return DIGITAL_ORDER;
+    if (ROBOTICS_ORDER.includes(page)) return ROBOTICS_ORDER;
     return ALL_ORDER;
   }
 
