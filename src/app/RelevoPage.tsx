@@ -311,16 +311,7 @@ export default function RelevoPage({
           <div className="px-5 sm:px-10 lg:px-[192px]">
             <div className="mx-auto w-full max-w-[1100px] flex flex-col gap-[42px]">
               {[imgS1, imgS2, imgS3].map((src, i) => (
-                <div
-                  key={i}
-                  className="w-full rounded-[4px] overflow-hidden"
-                  style={{
-                    backgroundColor: dark ? "#111" : "#fff",
-                    boxShadow: dark
-                      ? "0 14px 40px rgba(255,255,255,0.07)"
-                      : "0 14px 40px rgba(0,0,0,0.16)",
-                  }}
-                >
+                <div key={i} className="w-full">
                   <img
                     src={src}
                     alt={`Relevo screen ${i + 1}`}
