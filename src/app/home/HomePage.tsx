@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import {
+  AnimatePresence,
   motion,
+  MotionConfig,
   useAnimationFrame,
   useMotionValue,
   useMotionValueEvent,
@@ -11,13 +13,13 @@ import {
 
 import { ArrowUpRight } from "lucide-react";
 
-import introBg from "@/assets/home/intro_bg.png";
-import noonchiScreen from "@/assets/home/noonchi_screen.png";
+import introBg from "@/assets/home/intro_bg.avif";
+import noonchiScreen from "@/assets/home/noonchi_screen.avif";
 import noonchiLogo from "@/assets/home/noonchi_logo.png";
-import relevoImg from "@/assets/home/relevo.png";
+import relevoImg from "@/assets/home/relevo.avif";
 import relevoLogo from "@/assets/home/relevo_logo.png";
-import trodImg from "@/assets/home/trod.png";
-import playgroundImg from "@/assets/home/playground.png";
+import trodImg from "@/assets/home/trod.avif";
+import playgroundImg from "@/assets/home/playground.avif";
 import lineContact from "@/assets/home/line_contact.svg";
 import star from "@/assets/home/star.svg";
 
@@ -38,13 +40,14 @@ const WIDE_W = 1395;
 const NAV_X = 64; // Figma: 120
 const NAV_END = NAV_X + 289; // right edge of the last nav item ("About")
 
-const SANS = "'Proxima Nova', 'proxima-nova', 'Figtree', system-ui, sans-serif";
+// Figma uses Proxima Nova, which isn't licensed for web use; Figtree is the closest free match
+const SANS = "'Figtree', system-ui, sans-serif";
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
 type NavTarget = "work" | "about" | "noonchi" | "relevo" | "trod";
 
 // ── Light / dark palette (page chrome only — cards keep their own artwork) ──
-const LIGHT = { bg: "#ffffff", ink: "#000000", dotIdle: "#D9D9D9", trackDot: "rgba(0,0,0,0.28)", starFilter: "invert(0)" };
+const LIGHT = { bg: "#ffffff", ink: "#000000", dotIdle: "#C4C4C4", trackDot: "rgba(0,0,0,0.28)", starFilter: "invert(0)" };
 const DARK = { bg: "#0b0b0c", ink: "#ffffff", dotIdle: "#3a3a3d", trackDot: "rgba(255,255,255,0.3)", starFilter: "invert(1)" };
 type Palette = typeof LIGHT;
 const PaletteContext = createContext<Palette>(LIGHT);
@@ -182,6 +185,8 @@ export default function HomePage({ navigate, dark }: {
   // ── Keyboard ───────────────────────────────────────────────────────────────
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const onControl = e.target instanceof Element && e.target.closest("button, a, [role='link']");
+      if (onControl && (e.key === " " || e.key === "Enter")) return;
       if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(e.key)) { e.preventDefault(); step(1); }
       else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) { e.preventDefault(); step(-1); }
       else if (e.key === "Home") go(0);
@@ -194,9 +199,10 @@ export default function HomePage({ navigate, dark }: {
   // ── Touch drag ─────────────────────────────────────────────────────────────
   const lastTouch = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
-    lastTouch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    lastTouch.current = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
   };
   const onTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length > 1) { lastTouch.current = null; return; } // pinch-zoom
     if (!lastTouch.current) return;
     const t = e.touches[0];
     const dx = lastTouch.current.x - t.clientX;
@@ -216,13 +222,25 @@ export default function HomePage({ navigate, dark }: {
     return () => { document.body.style.overflow = prev; };
   }, []);
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  const onFocusCapture = (e: React.FocusEvent) => {
+    const slideEl = (e.target as HTMLElement).closest<HTMLElement>("[data-slide]");
+    if (slideEl) go(Number(slideEl.dataset.slide));
+    requestAnimationFrame(() => {
+      if (rootRef.current) { rootRef.current.scrollLeft = 0; rootRef.current.scrollTop = 0; }
+    });
+  };
+
   const stageH = DESIGN_H * scale;
 
   return (
     <PaletteContext.Provider value={palette}>
+    <MotionConfig reducedMotion="user">
     <motion.div
-      className="fixed inset-0 overflow-hidden select-none"
-      style={{ fontFamily: SANS, touchAction: "none" }}
+      ref={rootRef}
+      className="fixed inset-0 overflow-hidden"
+      style={{ fontFamily: SANS, touchAction: "pinch-zoom" }}
+      onFocusCapture={onFocusCapture}
       initial={false}
       animate={{ backgroundColor: palette.bg }}
       transition={COLOR_TRANSITION}
@@ -313,7 +331,8 @@ export default function HomePage({ navigate, dark }: {
             title="TROD"
             description="Building a tactile robotic obstacle detector for EMG-controlled navigation and prosthetic applications."
             tone="light"
-            stripBg="rgba(242,242,241,0.15)"
+            stripBg="rgba(246,246,245,0.6)"
+            stripBlur={24}
             media={
               <img
                 src={trodImg}
@@ -353,6 +372,7 @@ export default function HomePage({ navigate, dark }: {
         <Dots count={SLIDES.length} active={active} onSelect={go} />
       </div>
     </motion.div>
+    </MotionConfig>
     </PaletteContext.Provider>
   );
 }
@@ -421,7 +441,16 @@ function ContactLinks() {
     <div className="flex flex-col items-start" style={{ gap: 4, width: 313 }}>
       <img src={lineContact} alt="" width={313} height={0.5} className="block" draggable={false} />
       <div className="flex items-center" style={{ gap: 12 }}>
-        {links.map(l => (
+        {links.map(l => !l.href ? (
+          <span
+            key={l.label}
+            aria-disabled
+            className="whitespace-nowrap text-white opacity-80"
+            style={{ fontSize: 18, lineHeight: 1.1, letterSpacing: -0.9 }}
+          >
+            {l.label}
+          </span>
+        ) : (
           <a
             key={l.label}
             href={l.href}
@@ -447,9 +476,10 @@ function ContactLinks() {
 // ─────────────────────────────────────────────────────────────────────────────
 // INTRO / OUTRO CARDS
 // ─────────────────────────────────────────────────────────────────────────────
-function PhotoCard({ slide, children }: { slide: Slide; children: React.ReactNode }) {
+function PhotoCard({ slide, index, children }: { slide: Slide; index: number; children: React.ReactNode }) {
   return (
     <motion.div
+      data-slide={index}
       className="absolute rounded-[18px] overflow-hidden"
       style={{ left: slide.left, top: CARD_TOP, width: SMALL_W, height: CARD_H }}
       initial={{ opacity: 0, scale: 0.97 }}
@@ -471,7 +501,7 @@ const rise = (delay: number) => ({
 
 function IntroCard({ slide }: { slide: Slide }) {
   return (
-    <PhotoCard slide={slide}>
+    <PhotoCard slide={slide} index={0}>
       <div className="absolute flex flex-col items-start text-white" style={{ left: 113, top: 185, gap: 32 }}>
         <h1 style={{ fontSize: 72, lineHeight: 1.1, letterSpacing: -3.6, fontWeight: 500 }} className="whitespace-nowrap">
           <motion.span className="block" {...rise(0.35)}>
@@ -505,7 +535,7 @@ function IntroCard({ slide }: { slide: Slide }) {
 
 function OutroCard({ slide }: { slide: Slide }) {
   return (
-    <PhotoCard slide={slide}>
+    <PhotoCard slide={slide} index={SLIDES.length - 1}>
       <div className="absolute flex flex-col items-start text-white" style={{ left: 68, top: 141, gap: 32 }}>
         <p style={{ fontSize: 42, lineHeight: 1.1, letterSpacing: -2.1, fontWeight: 500, width: 347 }}>
           True depth comes from applying everything you know to everything you do.
@@ -531,7 +561,7 @@ function OutroCard({ slide }: { slide: Slide }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function ProjectSlide({
   index, slide, active, x, fillFrom, fillTo, heading, showLine = true, onOpen,
-  title, logo, description, tone = "light", stripBg, media, parallax,
+  title, logo, description, tone = "light", stripBg, stripBlur = 12, media, parallax,
 }: {
   index: number;
   slide: Slide;
@@ -547,6 +577,7 @@ function ProjectSlide({
   description?: string;
   tone?: "light" | "dark";
   stripBg?: string;
+  stripBlur?: number;
   media: React.ReactNode;
   parallax?: boolean;
 }) {
@@ -606,8 +637,11 @@ function ProjectSlide({
       <motion.div
         className={`absolute rounded-[18px] overflow-hidden bg-[#f8fafc] outline-none ${onOpen ? "group cursor-pointer" : ""}`}
         style={{ left: slide.left, top: CARD_TOP, width: slide.width, height: CARD_H }}
+        data-slide={index}
         onHoverStart={() => setHover(true)}
         onHoverEnd={() => setHover(false)}
+        onFocus={() => setHover(true)}
+        onBlur={() => setHover(false)}
         onClick={onOpen}
         role={onOpen ? "link" : undefined}
         tabIndex={onOpen ? 0 : undefined}
@@ -620,7 +654,7 @@ function ProjectSlide({
         <motion.div
           className="absolute inset-0"
           style={{ x: parallax ? mediaX : 0 }}
-          animate={{ scale: hover && onOpen ? 1.025 : parallax ? 1.05 : 1 }}
+          animate={{ scale: (parallax ? 1.05 : 1) * (hover ? 1.03 : 1) }}
           transition={{ duration: 0.8, ease: EASE_OUT }}
         >
           {media}
@@ -637,14 +671,14 @@ function ProjectSlide({
                 width: slide.width + 48,
                 height: 207,
                 background: stripBg,
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
+                backdropFilter: `blur(${stripBlur}px)`,
+                WebkitBackdropFilter: `blur(${stripBlur}px)`,
                 maskImage: "linear-gradient(to bottom, transparent 0, black 28px)",
                 WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 28px)",
               }}
             />
 
-            <div className="absolute flex flex-col items-start" style={{ left: 72, top: 542, width: 750, gap: 13 }}>
+            <div className="absolute flex flex-col items-start" style={{ left: 72, top: 542, width: 790, gap: 13 }}>
               <div className="flex items-center" style={{ gap: 12 }}>
                 {logo && (
                   <img src={logo.src} alt="" width={logo.w} height={logo.h} className="object-cover shrink-0" style={{ width: logo.w, height: logo.h }} draggable={false} />
@@ -665,7 +699,7 @@ function ProjectSlide({
                   </motion.span>
                 )}
               </div>
-              <p style={{ fontSize: 20, lineHeight: "normal", opacity: 0.8, color: fg }}>{description}</p>
+              <p style={{ fontSize: 20, lineHeight: "normal", letterSpacing: -0.2, opacity: 0.8, color: fg }}>{description}</p>
             </div>
           </>
         )}
@@ -709,31 +743,60 @@ function JourneyLine({ fill, revealed }: { fill: MotionValue<number>; revealed: 
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGINATION DOTS
 // ─────────────────────────────────────────────────────────────────────────────
+const DOT_LABELS = ["Hello", "Noonchi", "Relevo", "TROD", "Playground", "Create Magic"];
+
 function Dots({ count, active, onSelect }: { count: number; active: number; onSelect: (i: number) => void }) {
   const { ink, dotIdle } = usePalette();
+  const [hovered, setHovered] = useState<number | null>(null);
   return (
     <div
       className="absolute z-20 flex items-center -translate-x-1/2"
-      style={{ left: "50%", top: 1042, gap: 6, height: 6 }}
+      style={{ left: "50%", top: 1036, height: 20 }}
+      onMouseLeave={() => setHovered(null)}
     >
-      {Array.from({ length: count }, (_, i) => (
-        <button
-          key={i}
-          onClick={() => onSelect(i)}
-          aria-label={`Go to slide ${i + 1}`}
-          aria-current={i === active ? "true" : undefined}
-          className="relative flex items-center justify-center cursor-pointer"
-          style={{ height: 6, padding: 0 }}
-        >
-          <motion.span
-            className="block rounded-full"
-            style={{ height: 6 }}
-            animate={{ width: i === active ? 18 : 6, backgroundColor: i === active ? ink : dotIdle }}
-            whileHover={{ scale: 1.3 }}
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          />
-        </button>
-      ))}
+      {Array.from({ length: count }, (_, i) => {
+        const isActive = i === active;
+        const isHovered = i === hovered;
+        return (
+          <button
+            key={i}
+            onClick={() => onSelect(i)}
+            onMouseEnter={() => setHovered(i)}
+            onFocus={() => setHovered(i)}
+            onBlur={() => setHovered(null)}
+            aria-label={`Go to ${DOT_LABELS[i]}`}
+            aria-current={isActive ? "true" : undefined}
+            className="relative flex items-center justify-center cursor-pointer outline-none"
+            style={{ height: 20, padding: "0 5px" }}
+          >
+            <motion.span
+              className="block rounded-full"
+              style={{ height: 8 }}
+              initial={false}
+              animate={{
+                width: isActive ? 24 : 8,
+                scale: isHovered ? 1.5 : 1,
+                backgroundColor: isActive || isHovered ? ink : dotIdle,
+              }}
+              transition={{ type: "spring", stiffness: 420, damping: 28 }}
+            />
+            <AnimatePresence>
+              {isHovered && (
+                <motion.span
+                  className="pointer-events-none absolute left-1/2 whitespace-nowrap"
+                  style={{ bottom: "100%", marginBottom: 10, x: "-50%", fontSize: 20, lineHeight: 1.1, letterSpacing: -1, color: ink }}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  transition={{ duration: 0.25, ease: EASE_OUT }}
+                >
+                  {DOT_LABELS[i]}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+        );
+      })}
     </div>
   );
 }
