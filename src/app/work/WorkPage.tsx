@@ -16,8 +16,11 @@ import liquidHardware from "@/assets/work/liquid_hardware.avif";
 import liquidFigure from "@/assets/work/liquid_figure.avif";
 import liquidInteraction from "@/assets/work/liquid_interaction.avif";
 import liquidMachine from "@/assets/work/liquid_machine.avif";
+import noonchiHero from "@/assets/noonchi-cs/noonchi_hero.avif";
+import relevoHero from "@/assets/home/relevo.avif";
+import trodCard from "@/assets/home/trod.avif";
 import {
-  CARD_HOVER, CONTENT_TOP, EASE_OUT, GAP, HOVER_SPRING, SURFACE, TEXT_GREY, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS,
+  CARD_HOVER, CONTENT_TOP, EASE_OUT, FADED_GREY, GAP, HOVER_SPRING, SURFACE, TEXT_GREY, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS,
   TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -240,7 +243,43 @@ function Vimeo({ id, title, aspect }: { id: string; title: string; aspect: strin
 // ─────────────────────────────────────────────────────────────────────────────
 type Project = { id: string; label: string; title: string; content: ReactNode };
 
-const NONE: Project[] = [];
+// Digital Interfaces: same template as Robotics. Each project opens with its image and the Home
+// card's description; add sections below in the same way as the Robotics projects.
+const DIGITAL: Project[] = [
+  {
+    id: "noonchi",
+    label: "Noonchi",
+    title: "Noonchi",
+    content: (
+      <>
+        <Media w={2400} h={1214} src={noonchiHero} alt="Noonchi app home screen" />
+        <Body>
+          <Intro>
+            Co-founding and building Noonchi - an intelligent app + wearable system to help autistic individuals make
+            implicit social cues more explicit for clearer communication.
+          </Intro>
+        </Body>
+      </>
+    ),
+  },
+  {
+    id: "relevo",
+    label: "Relevo",
+    title: "Relevo",
+    content: (
+      <>
+        <Media h={745} src={relevoHero} alt="Relevo soft-robotic knee wearable beside its clinical dashboard" />
+        <Body>
+          <Intro>
+            Building a physician-facing clinical dashboard and a soft-robotic wearable device for assisting in post knee
+            surgery recovery.
+          </Intro>
+        </Body>
+      </>
+    ),
+  },
+];
+
 const ROBOTICS: Project[] = [
   {
     id: "trod",
@@ -399,7 +438,7 @@ export default function WorkPage({ tab, onTab, navigate }: {
   const { scale, stageW } = useStageScale();
   const headerH = NAV_TOP * 2 + MENU_SIZE * 1.1;
   const columnW = Math.min(stageW - PAD_X - COLUMN_X, CARD_W);
-  const projects = tab === "robotics" ? ROBOTICS : NONE;
+  const projects = tab === "robotics" ? ROBOTICS : DIGITAL;
 
   // The stage is scaled with a transform, so its height is measured and set on the outer box
   const stageRef = useRef<HTMLDivElement>(null);
@@ -436,6 +475,15 @@ export default function WorkPage({ tab, onTab, navigate }: {
     if (!el) return;
     window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - CONTENT_TOP * scale, behavior: "smooth" });
   };
+
+  // Arriving with #section in the URL (Home's Relevo card) scrolls to that project once laid out
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id || !projects.some(p => p.id === id)) return;
+    const t = window.setTimeout(() => scrollTo(id), 350);
+    return () => window.clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects]);
 
   const switchTab = (next: WorkTab) => {
     if (next === tab) return;
@@ -486,13 +534,95 @@ export default function WorkPage({ tab, onTab, navigate }: {
                     <div className="flex flex-col" style={{ gap: CARD_GAP, marginTop: HEADING_TO_CARD }}>{p.content}</div>
                   </section>
                 ))}
-                {projects.length === 0 && <DigitalSoon onOpen={() => navigate("noonchi")} />}
+                <NextCard {...NEXT[tab]} onOpen={() => switchTab(tab === "digital" ? "robotics" : "digital")} />
               </motion.div>
             </AnimatePresence>
           </div>
         </div>
       </div>
     </MotionConfig>
+  );
+}
+
+// End of each tab: a card for the other tab, spaced like the next project and set off by a hairline. Same card as Home's
+// project cards: image, frosted strip, logo-star + title + line, arrow on hover, lift on hover.
+const NEXT: Record<WorkTab, { label: string; title: string; description: string; image: string; alt: string; tone: "light" | "dark" }> = {
+  digital: {
+    label: "Next - Robotics",
+    title: "Robotics",
+    description: "TROD, Epicure Robotics and Liquid Data",
+    image: trodCard,
+    alt: "TROD robot",
+    tone: "light",
+  },
+  robotics: {
+    label: "Next - Digital Interfaces",
+    title: "Digital Interfaces",
+    description: "Noonchi and Relevo",
+    image: relevoHero,
+    alt: "Relevo wearable and clinical dashboard",
+    tone: "dark",
+  },
+};
+
+function NextCard({ label, title, description, image, alt, tone, onOpen }: (typeof NEXT)[WorkTab] & { onOpen: () => void }) {
+  const [hover, setHover] = useState(false);
+  const fg = tone === "dark" ? "#ffffff" : "#000000";
+  return (
+    <motion.div {...REVEAL} className="flex flex-col" style={{ gap: HEADING_TO_CARD, marginTop: -SECTION_GAP / 2 }}>
+      {/* Hairline dividing the projects from what's next: half the project gap above and below it,
+          drawn like the line above the contact links on Home's hello card */}
+      <div aria-hidden style={{ height: 0.5, background: FADED_GREY, marginBottom: SECTION_GAP / 2 - HEADING_TO_CARD }} />
+      <p style={BODY}>{label}</p>
+      <motion.button
+        onClick={onOpen}
+        onHoverStart={() => setHover(true)}
+        onHoverEnd={() => setHover(false)}
+        onFocus={() => setHover(true)}
+        onBlur={() => setHover(false)}
+        aria-label={label}
+        className="relative w-full overflow-hidden text-left cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+        style={{ height: 667, borderRadius: RADIUS, background: MEDIA_BG }}
+        whileHover={CARD_HOVER}
+        whileTap={{ scale: 0.99, transition: { duration: 0.1 } }}
+        transition={HOVER_SPRING}
+      >
+        <img src={image} alt={alt} loading="lazy" decoding="async" draggable={false} className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" />
+        {/* Frosted strip, feathered at the top: the same strip as Home's card for each image
+            (Relevo: barely tinted, 12px blur; TROD: 60% tint, 24px blur) */}
+        <div
+          className="absolute"
+          style={{
+            left: -24,
+            right: -24,
+            bottom: 0,
+            height: 185,
+            background: tone === "dark" ? "rgba(255,255,255,0.01)" : "rgba(248,250,252,0.6)",
+            backdropFilter: `blur(${tone === "dark" ? 12 : 24}px)`,
+            WebkitBackdropFilter: `blur(${tone === "dark" ? 12 : 24}px)`,
+            maskImage: "linear-gradient(to bottom, transparent 0, black 28px)",
+            WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 28px)",
+          }}
+        />
+        <div className="absolute flex flex-col items-start" style={{ left: 72, bottom: 64, gap: 13 }}>
+          <div className="flex items-center" style={{ gap: 12 }}>
+            <img src={star} alt="" width={30} height={31} draggable={false} style={{ filter: tone === "dark" ? "invert(1)" : undefined }} />
+            <span style={{ fontSize: 32, lineHeight: 1.1, letterSpacing: -1.6, fontWeight: 500, color: fg }}>{title}</span>
+            <motion.span
+              className="flex"
+              style={{ color: fg }}
+              initial={false}
+              animate={{ opacity: hover ? 1 : 0, x: hover ? 0 : -8, y: hover ? 0 : 8 }}
+              transition={{ duration: 0.35, ease: EASE_OUT }}
+              aria-hidden
+            >
+              <ArrowUpRight size={28} strokeWidth={1.75} />
+            </motion.span>
+          </div>
+          <span style={{ fontSize: 20, lineHeight: "normal", letterSpacing: -0.2, color: fg, opacity: 0.8 }}>{description}</span>
+        </div>
+      </motion.button>
+    </motion.div>
   );
 }
 
@@ -645,22 +775,5 @@ function ToTop({ show, scale }: { show: boolean; scale: number }) {
         </motion.div>
       )}
     </AnimatePresence>
-  );
-}
-
-// Placeholder until the Digital Interfaces version is designed
-function DigitalSoon({ onOpen }: { onOpen: () => void }) {
-  return (
-    <motion.div {...REVEAL} className="flex flex-col items-start" style={{ gap: GAP / 2 }}>
-      <p style={BODY}>Digital Interfaces is being redesigned.</p>
-      <button
-        onClick={onOpen}
-        className={`group inline-flex items-center cursor-pointer underline underline-offset-4 decoration-1 ${LINK_CLASS}`}
-        style={{ ...BODY, color: "#000", fontWeight: 600, gap: 4 }}
-      >
-        Read the Noonchi case study
-        <ArrowUpRight size={18} strokeWidth={2} className="transition-transform duration-300 ease-out group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
-      </button>
-    </motion.div>
   );
 }

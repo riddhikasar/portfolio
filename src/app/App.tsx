@@ -953,7 +953,7 @@ export default function App() {
   const [page, setPageRaw] = useState<Page>(() => pathToPage(window.location.pathname));
   const [activeTab, setTabRaw] = useState<Tab>(() => {
     const t = new URLSearchParams(window.location.search).get("tab") as Tab | null;
-    return t === "digital" ? "digital" : "robotics";
+    return t === "robotics" ? "robotics" : "digital";
   });
   const [dark, setDark] = useState(false);
 
@@ -975,11 +975,11 @@ export default function App() {
       const s = e.state as { page: Page; tab: Tab } | null;
       if (s) {
         setPageRaw(s.page);
-        setTabRaw(s.tab === "digital" ? "digital" : "robotics");
+        setTabRaw(s.tab === "robotics" ? "robotics" : "digital");
       } else {
         setPageRaw(pathToPage(window.location.pathname));
         const t = new URLSearchParams(window.location.search).get("tab") as Tab | null;
-        setTabRaw(t === "digital" ? "digital" : "robotics");
+        setTabRaw(t === "robotics" ? "robotics" : "digital");
       }
     }
     window.addEventListener("popstate", onPop);
@@ -988,7 +988,9 @@ export default function App() {
 
   // navigate — pushes a new browser history entry and updates React state
   const navigate = useCallback((p: Page, t?: Tab) => {
-    const tab = t ?? activeTab;
+    // Work opens on Digital Interfaces unless a tab is asked for
+    const tab = t ?? (p === "work" ? "digital" : activeTab);
+    if (p === "work") t = tab;
     history.pushState({ page: p, tab }, "", buildPath(p, p === "work" ? tab : undefined));
     setPageRaw(p);
     if (t !== undefined) setTabRaw(t);
@@ -1054,7 +1056,13 @@ export default function App() {
                   history.pushState({ page: "play", tab: activeTab }, "", withBasePath("/play?view=all"));
                   setPageRaw("play");
                 } else if (p === "trod") navigate("work", "robotics"); // the robot card opens Work › Robotics, where TROD is first
-                else navigate(p);
+                else if (p === "noonchi") navigate("work", "digital"); // Noonchi is first on Work › Digital Interfaces
+                else if (p === "relevo") {
+                  // Relevo opens Work › Digital Interfaces scrolled to its section
+                  history.pushState({ page: "work", tab: "digital" }, "", withBasePath("/work?tab=digital#relevo"));
+                  setTabRaw("digital");
+                  setPageRaw("work");
+                } else navigate(p);
               }}
               dark={dark}
             />
@@ -1065,7 +1073,7 @@ export default function App() {
           </motion.div>
         ) : page === "work" ? (
           <motion.div key="work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <WorkPageV2 tab={activeTab === "digital" ? "digital" : "robotics"} onTab={setActiveTab} navigate={p => navigate(p)} />
+            <WorkPageV2 tab={activeTab === "robotics" ? "robotics" : "digital"} onTab={setActiveTab} navigate={p => navigate(p)} />
           </motion.div>
         ) : page === "noonchi" ? (
           <motion.div key="noonchi" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
