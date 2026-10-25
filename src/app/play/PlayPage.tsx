@@ -22,7 +22,7 @@ import art0409 from "@/assets/art/art_0409.avif";
 import art_izumi from "@/assets/art/art_izumi.avif";
 import { POEMS, type Poem } from "./poems";
 import {
-  CARD_HOVER, CONTENT_TOP, EASE_OUT, GAP, HOVER_SPRING, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, SERIF,
+  CARD_HOVER, CONTENT_TOP, EASE_OUT, GAP, HOVER_SPRING, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, SERIF, SURFACE, TEXT_OPACITY,
   TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -458,7 +458,7 @@ function PoemCard({ poem, fit = 1, animate = true, inView = false, delay = 0, st
         className: "cursor-zoom-in outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4",
       })}
       style={{
-        background: "#f3f3f3",
+        background: SURFACE,
         borderRadius: RADIUS,
         padding: POEM_PAD,
         fontFamily: SERIF,
@@ -716,7 +716,7 @@ function Lightbox({ entry, scale, onClose, onStep }: {
                     poem={entry.poem}
                     fit={viewerPoemFit(entry.poem, scale)}
                     animate={false}
-                    style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.12)", background: "#f6f6f6" }}
+                    style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.12)", background: SURFACE }}
                   />
                 </motion.div>
               ) : item && (
@@ -745,7 +745,7 @@ function Lightbox({ entry, scale, onClose, onStep }: {
                   />
                 </div>
                 {item.title && (
-                  <figcaption style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 20 * scale, color: "black", opacity: 0.75 }}>
+                  <figcaption style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 20 * scale, color: "black", opacity: TEXT_OPACITY }}>
                     {item.title.text}
                   </figcaption>
                 )}

@@ -23,7 +23,7 @@ import playgroundImg from "@/assets/home/playground.avif";
 import lineContact from "@/assets/home/line_contact.svg";
 import star from "@/assets/home/star.svg";
 import {
-  CARD_HOVER, DESIGN_H, EASE_OUT, GAP, HOVER_SPRING, LINK_CLASS, NAV_X, SANS, TopNav, useStageScale, type SitePage,
+  CARD_HOVER, DESIGN_H, EASE_OUT, FADED_GREY, GAP, HOVER_SPRING, LINK_CLASS, NAV_X, SANS, SURFACE, TEXT_OPACITY, TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ const WIDE_W = 1395;
 type NavTarget = SitePage | "play-all" | "noonchi" | "relevo" | "trod";
 
 // ── Light / dark palette (page chrome only — cards keep their own artwork) ──
-const LIGHT = { bg: "#ffffff", ink: "#000000", dotIdle: "#C4C4C4", trackDot: "rgba(0,0,0,0.28)", starFilter: "invert(0)" };
+const LIGHT = { bg: "#ffffff", ink: "#000000", dotIdle: FADED_GREY, trackDot: "rgba(0,0,0,0.28)", starFilter: "invert(0)" };
 const DARK = { bg: "#0b0b0c", ink: "#ffffff", dotIdle: "#3a3a3d", trackDot: "rgba(255,255,255,0.3)", starFilter: "invert(1)" };
 type Palette = typeof LIGHT;
 const PaletteContext = createContext<Palette>(LIGHT);
@@ -322,7 +322,7 @@ export default function HomePage({ navigate, dark }: {
             title="TROD"
             description="Building a tactile robotic obstacle detector for EMG-controlled navigation and prosthetic applications."
             tone="light"
-            stripBg="rgba(246,246,245,0.6)"
+            stripBg="rgba(248,250,252,0.6)"
             stripBlur={24}
             media={
               <img
@@ -667,7 +667,7 @@ function ProjectSlide({
                   </motion.span>
                 )}
               </div>
-              <p style={{ fontSize: 20, lineHeight: "normal", letterSpacing: -0.2, opacity: 0.8, color: fg }}>{description}</p>
+              <p style={{ fontSize: 20, lineHeight: "normal", letterSpacing: -0.2, opacity: TEXT_OPACITY, color: fg }}>{description}</p>
             </div>
           </>
         )}

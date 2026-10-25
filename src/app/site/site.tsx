@@ -22,6 +22,14 @@ export const MONO = "'Source Code Pro', ui-monospace, monospace";
 export const SERIF = "'EB Garamond', Georgia, serif";
 export const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
+// The site's only greys: readable secondary text, faded/inactive things, and card backgrounds
+export const TEXT_OPACITY = 0.8; // body and any secondary text (Home's descriptions)
+export const FADED_OPACITY = 0.2; // inactive menu items, idle dots
+export const TEXT_GREY = `rgba(0,0,0,${TEXT_OPACITY})`;
+export const FADED_GREY = `rgba(0,0,0,${FADED_OPACITY})`;
+export const SURFACE = "#f8fafc"; // every card, callout and poem background
+export const HAIRLINE = "1px solid rgba(0,0,0,0.08)"; // thin borders and dividers
+
 // Card hover shared by Home and Play: lift, grow slightly, soft shadow. HOVER_SPRING is also the
 // card's resting transition, so it settles back immediately when the cursor leaves.
 export const HOVER_SPRING = { type: "spring", stiffness: 260, damping: 24 } as const;

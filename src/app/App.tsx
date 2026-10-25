@@ -12,6 +12,7 @@ import EpicurePage from "./Epicure Page";
 import HomePage from "./home/HomePage";
 import PlayPage from "./play/PlayPage";
 import NoonchiCaseStudy from "./noonchi/NoonchiCaseStudy";
+import WorkPageV2 from "./work/WorkPage";
 
 // ── Project thumbnails ─────────────────────────────────────────────
 import thumbNoonchi from "@/assets/thumbnails/noonchi_thumbnail.png";
@@ -952,7 +953,7 @@ export default function App() {
   const [page, setPageRaw] = useState<Page>(() => pathToPage(window.location.pathname));
   const [activeTab, setTabRaw] = useState<Tab>(() => {
     const t = new URLSearchParams(window.location.search).get("tab") as Tab | null;
-    return t === "robotics" ? "robotics" : "digital";
+    return t === "digital" ? "digital" : "robotics";
   });
   const [dark, setDark] = useState(false);
 
@@ -974,11 +975,11 @@ export default function App() {
       const s = e.state as { page: Page; tab: Tab } | null;
       if (s) {
         setPageRaw(s.page);
-        setTabRaw(s.tab === "robotics" ? "robotics" : "digital");
+        setTabRaw(s.tab === "digital" ? "digital" : "robotics");
       } else {
         setPageRaw(pathToPage(window.location.pathname));
         const t = new URLSearchParams(window.location.search).get("tab") as Tab | null;
-        setTabRaw(t === "robotics" ? "robotics" : "digital");
+        setTabRaw(t === "digital" ? "digital" : "robotics");
       }
     }
     window.addEventListener("popstate", onPop);
@@ -1029,7 +1030,7 @@ export default function App() {
       style={{ backgroundColor: bgColor, WebkitFontSmoothing: "antialiased", wordBreak: "break-word", overflowWrap: "anywhere", lineHeight: 1.35 }}
     >
       {/* Header stays in normal document flow (redesigned pages have their own nav) */}
-      {page !== "home" && page !== "play" && page !== "noonchi" && <div
+      {page !== "home" && page !== "play" && page !== "work" && page !== "noonchi" && <div
         className="transition-colors duration-300"
         style={{ backgroundColor: dark ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.88)", backdropFilter: "blur(10px)" }}
       >
@@ -1052,7 +1053,8 @@ export default function App() {
                   // The home page's Play card opens the Play page on "All"
                   history.pushState({ page: "play", tab: activeTab }, "", withBasePath("/play?view=all"));
                   setPageRaw("play");
-                } else navigate(p);
+                } else if (p === "trod") navigate("work", "robotics"); // the robot card opens Work › Robotics, where TROD is first
+                else navigate(p);
               }}
               dark={dark}
             />
@@ -1063,7 +1065,7 @@ export default function App() {
           </motion.div>
         ) : page === "work" ? (
           <motion.div key="work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <WorkPage dark={dark} activeTab={activeTab} setTab={setActiveTab} setPage={navigate} />
+            <WorkPageV2 tab={activeTab === "digital" ? "digital" : "robotics"} onTab={setActiveTab} navigate={p => navigate(p)} />
           </motion.div>
         ) : page === "noonchi" ? (
           <motion.div key="noonchi" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>

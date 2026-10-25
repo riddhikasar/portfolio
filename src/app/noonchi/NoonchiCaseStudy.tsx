@@ -20,7 +20,7 @@ import iconC1 from "@/assets/noonchi/c_1.svg";
 import iconC2 from "@/assets/noonchi/c_2.svg";
 import iconC3 from "@/assets/noonchi/c_3.svg";
 import {
-  CONTENT_TOP, EASE_OUT, GAP, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS,
+  CONTENT_TOP, EASE_OUT, GAP, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, HAIRLINE, SURFACE, TEXT_GREY, TEXT_OPACITY,
   TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -29,7 +29,7 @@ import {
 // table of contents in the left margin, and a content column that starts where the
 // menu ends — the same line the first card sits on at Home.
 // ─────────────────────────────────────────────────────────────────────────────
-const CARD_BG = "#f5f5f5";
+const CARD_BG = SURFACE;
 const PURPLE = "#4F36D7";
 const RED = "#EA181B";
 const TEXT_W = 960; // max width of body text
@@ -134,7 +134,7 @@ export default function NoonchiCaseStudy({ navigate, onPrevProject, onNextProjec
                   key={s.id}
                   onClick={() => jumpTo(s.id)}
                   aria-current={on ? "location" : undefined}
-                  className={`relative text-left whitespace-nowrap cursor-pointer ${on ? "opacity-100" : "opacity-35"} ${LINK_CLASS}`}
+                  className={`relative text-left whitespace-nowrap cursor-pointer ${on ? "opacity-100" : "opacity-20"} ${LINK_CLASS}`}
                   style={{ ...TYPE.label, transition: "opacity 0.3s ease-out" }}
                 >
                   <motion.span
@@ -188,9 +188,9 @@ function Section({ id, label, heading, children, media }: {
   return (
     <section id={id} style={{ marginTop: SECTION_GAP }}>
       <motion.div {...reveal} style={{ maxWidth: TEXT_W }}>
-        <p className="m-0" style={{ ...TYPE.label, opacity: 0.45 }}>{label}</p>
+        <p className="m-0" style={{ ...TYPE.label, opacity: TEXT_OPACITY }}>{label}</p>
         <h2 className="m-0" style={{ ...TYPE.heading, marginTop: 16 }}>{heading}</h2>
-        {children && <div style={{ ...TYPE.body, marginTop: 24, opacity: 0.8 }}>{children}</div>}
+        {children && <div style={{ ...TYPE.body, marginTop: 24, opacity: TEXT_OPACITY }}>{children}</div>}
       </motion.div>
       {media && <div style={{ marginTop: GAP }}>{media}</div>}
     </section>
@@ -230,7 +230,7 @@ function Intro() {
             <img src={noonchiLogo} alt="" width={58} height={45} style={{ width: 58, height: 45 }} draggable={false} />
             <h1 className="m-0" style={TYPE.title}>Noonchi</h1>
           </div>
-          <p className="m-0" style={{ ...TYPE.body, marginTop: 28, opacity: 0.8 }}>
+          <p className="m-0" style={{ ...TYPE.body, marginTop: 28, opacity: TEXT_OPACITY }}>
             I co-founded, designed, and built Noonchi — an intelligent app + wearable system that bridges the
             communication gap between autistic and non-autistic individuals in the workplace.
           </p>
@@ -239,7 +239,7 @@ function Intro() {
         <motion.dl {...reveal} className="m-0 grid shrink-0" style={{ gridTemplateColumns: "auto auto", columnGap: 32, rowGap: 12, marginTop: 14 }}>
           {meta.map(m => (
             <div key={m.k} className="contents">
-              <dt style={{ ...TYPE.label, opacity: 0.45 }}>{m.k}</dt>
+              <dt style={{ ...TYPE.label, opacity: TEXT_OPACITY }}>{m.k}</dt>
               <dd className="m-0" style={TYPE.label}>{m.v}</dd>
             </div>
           ))}
@@ -270,7 +270,7 @@ function Context() {
       media={
         // The video file is letterboxed; crop to its content area (as the previous page did)
         // White card with a hairline, like the watch image; a slight zoom hides the clip's edge line
-        <Card style={{ aspectRatio: "1200 / 601.61", background: "#ffffff", border: "1px solid rgba(0,0,0,0.08)" }}>
+        <Card style={{ aspectRatio: "1200 / 601.61", background: "#ffffff", border: HAIRLINE }}>
           <video className="absolute inset-0 size-full object-cover" style={{ transform: "scale(1.012)" }} src={nudgesMp4} autoPlay loop muted playsInline preload="auto" aria-label="Noonchi nudges demo" />
         </Card>
       }
@@ -314,7 +314,7 @@ function CoDesign() {
           </Card>
           <motion.figure {...reveal} className="m-0 text-center" style={{ marginTop: 120 }}>
             <blockquote className="m-0" style={{ ...TYPE.title, color: PURPLE }}>“I wish I had this my whole life…”</blockquote>
-            <figcaption style={{ ...TYPE.label, opacity: 0.45, marginTop: 20 }}>Noonchi beta user</figcaption>
+            <figcaption style={{ ...TYPE.label, opacity: TEXT_OPACITY, marginTop: 20 }}>Noonchi beta user</figcaption>
           </motion.figure>
         </>
       }
@@ -343,18 +343,18 @@ function HowItWorks() {
               <Card key={l.title} padding={40}>
                 <div
                   className="flex items-center justify-center rounded-full"
-                  style={{ width: 88, height: 88, background: l.bg, border: l.bg === "transparent" ? "1px solid rgba(0,0,0,0.6)" : undefined }}
+                  style={{ width: 88, height: 88, background: l.bg, border: l.bg === "transparent" ? `1px solid ${TEXT_GREY}` : undefined }}
                 >
                   <img src={l.icon} alt="" aria-hidden style={{ width: 48, height: 48 }} />
                 </div>
                 <h3 className="m-0" style={{ ...TYPE.cardTitle, marginTop: 32 }}>{l.title}</h3>
-                <p className="m-0" style={{ ...TYPE.body, fontSize: 18, marginTop: 12, opacity: 0.7 }}>{l.body}</p>
+                <p className="m-0" style={{ ...TYPE.body, fontSize: 18, marginTop: 12, opacity: TEXT_OPACITY }}>{l.body}</p>
               </Card>
             ))}
           </div>
           <div style={{ marginTop: GAP }}>
             {/* The watch image has a white background, so this card is white with a hairline border */}
-            <Card padding={64} style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.08)" }}>
+            <Card padding={64} style={{ background: "#ffffff", border: HAIRLINE }}>
               <img src={imgWatch} alt="Noonchi nudges on Apple Watch" className="block w-full h-auto" draggable={false} />
             </Card>
           </div>
@@ -377,7 +377,7 @@ function Screen({ src, n, style }: { src: string; n: number; style?: React.CSSPr
       loading="lazy"
       draggable={false}
       className="block"
-      style={{ borderRadius: RADIUS, border: "1px solid rgba(0,0,0,0.06)", ...style }}
+      style={{ borderRadius: RADIUS, border: HAIRLINE, ...style }}
     />
   );
 }
@@ -477,7 +477,7 @@ function Learnings() {
         <div className="grid" style={{ gridTemplateColumns: "repeat(3, 1fr)", gap: GAP }}>
           {items.map(i => (
             <Card key={i.text} padding={40}>
-              <div className="flex items-center justify-center rounded-full bg-white" style={{ width: 88, height: 88, border: "1px solid rgba(0,0,0,0.6)" }}>
+              <div className="flex items-center justify-center rounded-full bg-white" style={{ width: 88, height: 88, border: `1px solid ${TEXT_GREY}` }}>
                 <img src={i.icon} alt="" aria-hidden style={{ width: 48, height: 48 }} />
               </div>
               <p className="m-0" style={{ ...TYPE.cardTitle, marginTop: 32 }}>{i.text}</p>
@@ -502,11 +502,11 @@ function Footer({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void }
   );
   return (
     <footer style={{ marginTop: SECTION_GAP, paddingBottom: 64 }}>
-      <div className="flex items-center justify-between" style={{ borderTop: "1px solid rgba(0,0,0,0.1)", paddingTop: 32 }}>
+      <div className="flex items-center justify-between" style={{ borderTop: HAIRLINE, paddingTop: 32 }}>
         {link("← Previous project", onPrev)}
         {link("Next project →", onNext)}
       </div>
-      <p className="m-0 text-center" style={{ ...TYPE.label, fontSize: 14, opacity: 0.45, marginTop: 64 }}>© Riddhi Kasar 2026</p>
+      <p className="m-0 text-center" style={{ ...TYPE.label, fontSize: 14, opacity: TEXT_OPACITY, marginTop: 64 }}>© Riddhi Kasar 2026</p>
     </footer>
   );
 }
