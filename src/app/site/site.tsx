@@ -14,6 +14,7 @@ export const NAV_TOP = 32;
 export const CONTENT_TOP = 164; // where the first row of content starts below the menu
 export const GAP = 42; // space between cards; Figma: 32
 export const RADIUS = 18;
+export const MENU_SIZE = 24; // top menu and Play filters; Figma: 20
 
 // Figma uses Proxima Nova, which isn't licensed for web use; Figtree is the closest free match
 export const SANS = "'Figtree', system-ui, sans-serif";
@@ -65,7 +66,7 @@ export function TopNav({ current, onSelect, navRef, ink = "#000000" }: {
     <motion.nav
       ref={navRef}
       className="absolute z-20 flex items-center"
-      style={{ left: NAV_X, top: NAV_TOP, gap: 18 }}
+      style={{ left: NAV_X, top: NAV_TOP, gap: 20 }}
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.1 }}
@@ -79,9 +80,9 @@ export function TopNav({ current, onSelect, navRef, ink = "#000000" }: {
             aria-current={isCurrent ? "page" : undefined}
             className={`text-center whitespace-nowrap cursor-pointer ${isCurrent ? "opacity-100" : "opacity-20"} ${LINK_CLASS}`}
             style={{
-              fontSize: 20,
+              fontSize: MENU_SIZE,
               lineHeight: 1.1,
-              letterSpacing: -1,
+              letterSpacing: -MENU_SIZE * 0.05,
               fontWeight: isCurrent ? 600 : 400,
               color: ink,
               transition: "color 0.45s ease-in-out, opacity 0.3s ease-out",

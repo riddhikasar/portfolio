@@ -22,7 +22,7 @@ import art0409 from "@/assets/art/art_0409.avif";
 import art_izumi from "@/assets/art/art_izumi.avif";
 import { POEMS, type Poem } from "./poems";
 import {
-  CONTENT_TOP, EASE_OUT, GAP, LINK_CLASS, NAV_TOP, NAV_X, RADIUS, SANS, SERIF,
+  CONTENT_TOP, EASE_OUT, GAP, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, SERIF,
   TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -288,7 +288,7 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
   // Opens on Photos; ?view=all (used by the home page's Play card) opens on All
   const [filter, setFilter] = useState<Filter>(() =>
     new URLSearchParams(window.location.search).get("view") === "all" ? "all" : "photo");
-  const headerH = NAV_TOP * 2 + 24;
+  const headerH = NAV_TOP * 2 + MENU_SIZE * 1.1;
   const contentW = stageW - 2 * NAV_X;
 
   useFontsReady(); // poem sizes are measured from the real font
@@ -491,7 +491,7 @@ function Filters({ value, onChange }: { value: Filter; onChange: (f: Filter) => 
   return (
     <motion.div
       className="absolute z-20 flex items-center"
-      style={{ right: NAV_X, top: NAV_TOP, gap: 18 }}
+      style={{ right: NAV_X, top: NAV_TOP, gap: 20 }}
       role="group"
       aria-label="Filter"
       initial={{ opacity: 0, y: -8 }}
@@ -507,7 +507,7 @@ function Filters({ value, onChange }: { value: Filter; onChange: (f: Filter) => 
             aria-pressed={on}
             // Same style as the top menu: selected is semibold, the rest are faded
             className={`whitespace-nowrap cursor-pointer ${on ? "opacity-100" : "opacity-20"} ${LINK_CLASS}`}
-            style={{ fontSize: 20, lineHeight: 1.1, letterSpacing: -1, fontWeight: on ? 600 : 400, color: "black", transition: "opacity 0.3s ease-out" }}
+            style={{ fontSize: MENU_SIZE, lineHeight: 1.1, letterSpacing: -MENU_SIZE * 0.05, fontWeight: on ? 600 : 400, color: "black", transition: "opacity 0.3s ease-out" }}
           >
             {f.label}
           </button>
@@ -755,7 +755,7 @@ function Lightbox({ entry, scale, onClose, onStep }: {
           </div>
 
           {/* Close — sits where the filters are */}
-          <div className="absolute" style={{ right: edge, top: (NAV_TOP - 5) * scale }}>
+          <div className="absolute" style={{ right: edge, top: (NAV_TOP - 3) * scale }}>
             <motion.button
               ref={closeRef}
               onClick={onClose}
