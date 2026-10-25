@@ -111,8 +111,12 @@ const BOTTOM_MARGIN = 120;
 const POEM_KEYS: Record<string, string> = {
   cotton: "cotton candy skies", dots: "[...]", proof: "Some Proof", wish: "I wish I may, I wish I might...",
 };
-const ALL_LANES: { share: number; blocks: (string | string[])[] }[] = [
-  { share: 766, blocks: ["river", ["sketch", "dots"], "trees", "painting", "relief", "traitor", ["pines", "proof"]] },
+// A { row, poemShare } block is a "fill" row: poems take that share of the width, and images
+// stretch to the poem's height, cropped evenly from the sides.
+type Block = string | string[] | { row: string[]; poemShare: number };
+const ALL_LANES: { share: number; blocks: Block[] }[] = [
+  // poemShare 0.375: A sketch keeps ~75% of its width — trimmed white margin, still clear of the drawn frame
+  { share: 766, blocks: ["river", { row: ["sketch", "dots"], poemShare: 0.375 }, "trees", "painting", "relief", "traitor", ["pines", "proof"]] },
   { share: 460, blocks: ["magnanimous", "train", "sunflowers", "serenity", "izumi", "statue"] },
   { share: 482, blocks: ["cotton", "path", "wish", "rotunda", "tower", "moon"] },
 ];
@@ -149,20 +153,22 @@ function poemNaturalWidth(poem: Poem) {
   );
 }
 
-function layoutLane(blocks: (string | string[])[], x: number, laneW: number, top: number, poemRowExtra = 0) {
+function layoutLane(blocks: Block[], x: number, laneW: number, top: number, poemRowExtra = 0) {
   const placed: Placed[] = [];
   const poems: PlacedPoem[] = [];
   let poemRows = 0;
   let y = top;
   for (const block of blocks) {
-    const ids = Array.isArray(block) ? block : [block];
+    const fill = typeof block === "object" && !Array.isArray(block) ? block : null;
+    const ids = fill ? fill.row : Array.isArray(block) ? block : [block];
     // Poems get the width they need first (up to half the row); images share the rest in their Figma proportions
     const rowUsable = laneW - GAP * (ids.length - 1);
     const poemW = ids.map(id => (POEM_KEYS[id] ? poemNaturalWidth(poemByTitle(POEM_KEYS[id])) : 0));
     const hasImages = ids.some(id => !POEM_KEYS[id]);
-    const poemCap = hasImages ? rowUsable / 2 : rowUsable;
+    const poemCap = fill ? rowUsable * fill.poemShare : hasImages ? rowUsable / 2 : rowUsable;
     const poemTotal = poemW.reduce((t, w) => t + w, 0);
-    const poemScale = poemTotal > poemCap ? poemCap / poemTotal : hasImages ? 1 : rowUsable / poemTotal;
+    const poemScale = fill ? poemCap / poemTotal : poemTotal > poemCap ? poemCap / poemTotal : hasImages ? 1 : rowUsable / poemTotal;
+    const rowImages: Placed[] = [];
     const imageSum = ids.reduce((t, id) => t + (POEM_KEYS[id] ? 0 : ITEMS[id].w), 0);
     const imageSpace = rowUsable - poemTotal * poemScale;
     let ix = x;
@@ -179,16 +185,32 @@ function layoutLane(blocks: (string | string[])[], x: number, laneW: number, top
       } else {
         const it = ITEMS[id];
         const h = w * (it.h / it.w);
-        placed.push({ ...it, x: ix, y, width: w, height: h });
-        rowH = Math.max(rowH, h);
+        const pl = { ...it, x: ix, y, width: w, height: h };
+        placed.push(pl); rowImages.push(pl);
+        if (!fill) rowH = Math.max(rowH, h);
       }
       ix += w + GAP;
     });
     if (rowPoems.length) { poemRows++; rowH += poemRowExtra; }
+    if (fill) rowImages.forEach(pl => coverCrop(pl, rowH));
     rowPoems.forEach(pp => { pp.height = rowH; poems.push(pp); }); // poems fill their row's height
     y += rowH + GAP;
   }
   return { placed, poems, bottom: y - GAP, poemRows };
+}
+
+// Stretch an image to a new height, cropping its sides evenly; the title keeps its spot on the artwork
+function coverCrop(pl: Placed, height: number) {
+  const imgW = (pl.w / pl.h) * height; // image width at the new height
+  const wPct = (imgW / pl.width) * 100;
+  const lPct = -(wPct - 100) / 2;
+  if (pl.title) {
+    const x = (pl.title.x * wPct + lPct) / 100;
+    pl.title = { ...pl.title, x };
+  }
+  pl.crop = { w: wPct, h: 100, l: lPct, t: 0 };
+  pl.w = pl.width; pl.h = height; // the viewer frames it the same way
+  pl.height = height;
 }
 
 function layoutLanes(top: number, contentW: number) {
