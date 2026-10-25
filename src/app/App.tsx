@@ -1046,7 +1046,16 @@ export default function App() {
       <AnimatePresence mode="wait">
         {page === "home" ? (
           <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <HomePage navigate={p => navigate(p)} dark={dark} />
+            <HomePage
+              navigate={p => {
+                if (p === "play-all") {
+                  // The home page's Play card opens the Play page on "All"
+                  history.pushState({ page: "play", tab: activeTab }, "", withBasePath("/play?view=all"));
+                  setPageRaw("play");
+                } else navigate(p);
+              }}
+              dark={dark}
+            />
           </motion.div>
         ) : page === "play" ? (
           <motion.div key="play" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>

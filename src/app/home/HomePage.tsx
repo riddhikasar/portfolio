@@ -38,7 +38,7 @@ const SMALL_W = 539;
 const WIDE_W = 1395;
 
 
-type NavTarget = SitePage | "noonchi" | "relevo" | "trod";
+type NavTarget = SitePage | "play-all" | "noonchi" | "relevo" | "trod";
 
 // ── Light / dark palette (page chrome only — cards keep their own artwork) ──
 const LIGHT = { bg: "#ffffff", ink: "#000000", dotIdle: "#C4C4C4", trackDot: "rgba(0,0,0,0.28)", starFilter: "invert(0)" };
@@ -345,7 +345,7 @@ export default function HomePage({ navigate, dark }: {
             fillTo={stops[4]}
             heading="And take photos of, write about, and draw things that catch my eye"
             showLine={false}
-            onOpen={() => navigate("play")}
+            onOpen={() => navigate("play-all")}
             media={
               <img
                 src={playgroundImg}

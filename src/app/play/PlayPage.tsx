@@ -105,10 +105,17 @@ const ART_COLUMNS: Column[] = [
 ];
 const BOTTOM_MARGIN = 120;
 
-// "All" keeps photos and art at the same sizes as their own pages:
-// Photos, with one poem filling the space under the left column → a row of poems → Art
-const ALL_FILLER_POEM = "cotton candy skies";
-const ALL_POEM_ROW = ["[...]", "Some Proof", "I wish I may, I wish I might..."];
+// "All": photos, art and poems mixed in three columns, following the Figma "All" frame.
+// Column widths and contents were chosen so every piece stays within ~15% of its size on
+// its own page, poems never shrink, and the columns end level. A nested array is a row.
+const POEM_KEYS: Record<string, string> = {
+  cotton: "cotton candy skies", dots: "[...]", proof: "Some Proof", wish: "I wish I may, I wish I might...",
+};
+const ALL_LANES: { share: number; blocks: (string | string[])[] }[] = [
+  { share: 776, blocks: ["river", ["sketch", "pines"], "trees", ["dots", "proof"], "relief", "traitor", "painting"] },
+  { share: 490, blocks: ["magnanimous", "rotunda", "cotton", "tower", "wish", "moon"] },
+  { share: 442, blocks: ["sunflowers", "serenity", "path", "izumi", "statue", "train"] },
+];
 const poemByTitle = (t: string) => POEMS.find(p => p.title === t)!;
 
 // Poem card metrics (design px)
@@ -131,6 +138,73 @@ function poemHeight(poem: Poem, fit: number) {
   const size = POEM_SIZE * fit;
   const lines = poem.stanzas.reduce((t, st) => t + st.split("\n").length, 0);
   return 2 * POEM_PAD + size * POEM_LINE * (1 + lines) + size * POEM_STANZA_GAP * poem.stanzas.length;
+}
+
+// Width a poem card needs so no line wraps
+function poemNaturalWidth(poem: Poem) {
+  const lines = poem.stanzas.flatMap(st => st.split("\n"));
+  return 2 * POEM_PAD + Math.max(
+    textWidth(poem.title, `800 ${POEM_SIZE}px ${SERIF}`),
+    ...lines.map(l => textWidth(l, `500 ${POEM_SIZE}px ${SERIF}`)),
+  );
+}
+
+function layoutLane(blocks: (string | string[])[], x: number, laneW: number, top: number, poemRowExtra = 0) {
+  const placed: Placed[] = [];
+  const poems: PlacedPoem[] = [];
+  let poemRows = 0;
+  let y = top;
+  for (const block of blocks) {
+    const ids = Array.isArray(block) ? block : [block];
+    // Items share the row in their Figma proportions (poems by the width they need)
+    const natural = ids.map(id => (POEM_KEYS[id] ? poemNaturalWidth(poemByTitle(POEM_KEYS[id])) : ITEMS[id].w));
+    const sum = natural.reduce((t, n) => t + n, 0);
+    const rowUsable = laneW - GAP * (ids.length - 1);
+    let ix = x;
+    let rowH = 0;
+    const rowPoems: PlacedPoem[] = [];
+    ids.forEach((id, i) => {
+      const w = rowUsable * (natural[i] / sum);
+      if (POEM_KEYS[id]) {
+        const poem = poemByTitle(POEM_KEYS[id]);
+        const fit = poemFit(poem, w);
+        const pp = { poem, x: ix, y, width: w, height: poemHeight(poem, fit), fit };
+        rowPoems.push(pp);
+        rowH = Math.max(rowH, pp.height);
+      } else {
+        const it = ITEMS[id];
+        const h = w * (it.h / it.w);
+        placed.push({ ...it, x: ix, y, width: w, height: h });
+        rowH = Math.max(rowH, h);
+      }
+      ix += w + GAP;
+    });
+    if (rowPoems.length) { poemRows++; rowH += poemRowExtra; }
+    rowPoems.forEach(pp => { pp.height = rowH; poems.push(pp); }); // poems fill their row's height
+    y += rowH + GAP;
+  }
+  return { placed, poems, bottom: y - GAP, poemRows };
+}
+
+function layoutLanes(top: number, contentW: number) {
+  const total = ALL_LANES.reduce((t, l) => t + l.share, 0);
+  const usable = contentW - GAP * (ALL_LANES.length - 1);
+  const xs: number[] = [];
+  let x = NAV_X;
+  const widths = ALL_LANES.map(l => usable * (l.share / total));
+  widths.forEach(w => { xs.push(x); x += w + GAP; });
+
+  // First pass, then level the columns: a column that ends early gives the spare height to its poems
+  const first = ALL_LANES.map((l, i) => layoutLane(l.blocks, xs[i], widths[i], top));
+  const bottom = Math.max(...first.map(r => r.bottom));
+  const lanes = first.map((r, i) =>
+    r.poemRows && r.bottom < bottom ? layoutLane(ALL_LANES[i].blocks, xs[i], widths[i], top, (bottom - r.bottom) / r.poemRows) : r);
+
+  return {
+    placed: lanes.flatMap(r => r.placed),
+    poems: lanes.flatMap(r => r.poems),
+    bottom: Math.max(...lanes.map(r => r.bottom)),
+  };
 }
 
 type Placed = Item & { x: number; y: number; width: number; height: number };
@@ -184,14 +258,16 @@ const FILTERS: { id: Filter; label: string }[] = [
 
 export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void }) {
   const { scale, stageW } = useStageScale();
-  const [filter, setFilter] = useState<Filter>("photo");
+  // Opens on Photos; ?view=all (used by the home page's Play card) opens on All
+  const [filter, setFilter] = useState<Filter>(() =>
+    new URLSearchParams(window.location.search).get("view") === "all" ? "all" : "photo");
   const headerH = NAV_TOP * 2 + 24;
   const contentW = stageW - 2 * NAV_X;
 
   useFontsReady(); // poem sizes are measured from the real font
 
   let placed: Placed[] = [];
-  let filler: PlacedPoem | null = null;
+  let allPoems: PlacedPoem[] = [];
   let poemRow: { top: number; poems: Poem[] } | null = null;
   const [rowH, setRowH] = useState(0);
   let bottom = CONTENT_TOP;
@@ -203,26 +279,15 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
     poemRow = { top: CONTENT_TOP, poems: POEMS };
     bottom = CONTENT_TOP + rowH;
   } else {
-    const photos = layoutColumns(PHOTO_COLUMNS, CONTENT_TOP, contentW);
-    // The shortest photo column gets a poem that runs down to the bottom of the block
-    const col = photos.columns.reduce((a, c) => (c.bottom < a.bottom ? c : a));
-    const poem = poemByTitle(ALL_FILLER_POEM);
-    const fit = poemFit(poem, col.width);
-    const y = col.bottom + GAP;
-    filler = { poem, x: col.x, y, width: col.width, height: Math.max(poemHeight(poem, fit), photos.bottom - y), fit };
-    const blockBottom = Math.max(photos.bottom, y + filler.height);
-
-    poemRow = { top: blockBottom + GAP, poems: ALL_POEM_ROW.map(poemByTitle) };
-    const art = layoutColumns(ART_COLUMNS, poemRow.top + rowH + GAP, contentW);
-    placed = [...photos.placed, ...art.placed];
-    bottom = art.bottom;
+    const r = layoutLanes(CONTENT_TOP, contentW);
+    placed = r.placed; allPoems = r.poems; bottom = r.bottom;
   }
   const height = bottom + BOTTOM_MARGIN;
 
   // Viewer order follows the page: top to bottom, then left to right
   const entries: (ViewEntry & { x: number; y: number })[] = [
     ...placed.map(it => ({ key: it.id, kind: "image" as const, item: it, x: it.x, y: it.y })),
-    ...(filler ? [{ key: filler.poem.title, kind: "poem" as const, poem: filler.poem, x: filler.x, y: filler.y }] : []),
+    ...allPoems.map(pp => ({ key: pp.poem.title, kind: "poem" as const, poem: pp.poem, x: pp.x, y: pp.y })),
     ...(poemRow ? poemRow.poems.map((poem, i) => ({ key: poem.title, kind: "poem" as const, poem, x: NAV_X + i, y: poemRow!.top })) : []),
   ];
   const sequence = entries.sort((a, b) => a.y - b.y || a.x - b.x);
@@ -257,16 +322,16 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
             <AnimatePresence>
               {placed.map((item, i) => <PhotoCard key={item.id} item={item} order={i} onOpen={open} />)}
             </AnimatePresence>
-            {filler && (
+            {allPoems.map(pp => (
               <PoemCard
-                key={`filler-${filler.poem.title}`}
-                poem={filler.poem}
-                fit={filler.fit}
+                key={`all-${pp.poem.title}`}
+                poem={pp.poem}
+                fit={pp.fit}
                 inView
                 onOpen={open}
-                style={{ position: "absolute", left: filler.x, top: filler.y, width: filler.width, height: filler.height }}
+                style={{ position: "absolute", left: pp.x, top: pp.y, width: pp.width, height: pp.height }}
               />
-            )}
+            ))}
             {poemRow && (
               <Poems key={filter} poems={poemRow.poems} top={poemRow.top} width={contentW} onHeight={setRowH} onOpen={open} />
             )}
