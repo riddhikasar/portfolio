@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Moon, Sun } from "lucide-react";
-import NoonchiPage from "./NoonchiPage";
 import LiquidPage from "./LiquidPage";
 import RelevoPage from "./RelevoPage";
 import WaterPage from "./WaterPage";
@@ -12,6 +11,7 @@ import LinkPage from "./LinkPage";
 import EpicurePage from "./Epicure Page";
 import HomePage from "./home/HomePage";
 import PlayPage from "./play/PlayPage";
+import NoonchiCaseStudy from "./noonchi/NoonchiCaseStudy";
 
 // ── Project thumbnails ─────────────────────────────────────────────
 import thumbNoonchi from "@/assets/thumbnails/noonchi_thumbnail.png";
@@ -1029,7 +1029,7 @@ export default function App() {
       style={{ backgroundColor: bgColor, WebkitFontSmoothing: "antialiased", wordBreak: "break-word", overflowWrap: "anywhere", lineHeight: 1.35 }}
     >
       {/* Header stays in normal document flow (redesigned pages have their own nav) */}
-      {page !== "home" && page !== "play" && <div
+      {page !== "home" && page !== "play" && page !== "noonchi" && <div
         className="transition-colors duration-300"
         style={{ backgroundColor: dark ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.88)", backdropFilter: "blur(10px)" }}
       >
@@ -1067,7 +1067,7 @@ export default function App() {
           </motion.div>
         ) : page === "noonchi" ? (
           <motion.div key="noonchi" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <NoonchiPage dark={dark} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
+            <NoonchiCaseStudy navigate={p => navigate(p)} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
           </motion.div>
         ) : page === "liquid" ? (
           <motion.div key="liquid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
