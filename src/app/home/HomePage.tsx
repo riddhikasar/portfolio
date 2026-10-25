@@ -23,7 +23,7 @@ import playgroundImg from "@/assets/home/playground.avif";
 import lineContact from "@/assets/home/line_contact.svg";
 import star from "@/assets/home/star.svg";
 import {
-  DESIGN_H, EASE_OUT, GAP, LINK_CLASS, NAV_X, SANS, TopNav, useStageScale, type SitePage,
+  CARD_HOVER, DESIGN_H, EASE_OUT, GAP, HOVER_SPRING, LINK_CLASS, NAV_X, SANS, TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -258,7 +258,7 @@ export default function HomePage({ navigate, dark }: {
           aria-roledescription="carousel"
           aria-label="Featured work"
         >
-          <IntroCard slide={SLIDES[0]} />
+          <IntroCard slide={SLIDES[0]} onOpen={() => navigate("about")} />
 
           <ProjectSlide
             index={1}
@@ -358,7 +358,7 @@ export default function HomePage({ navigate, dark }: {
             parallax
           />
 
-          <OutroCard slide={SLIDES[5]} />
+          <OutroCard slide={SLIDES[5]} onOpen={() => navigate("about")} />
         </motion.div>
 
         <Dots count={SLIDES.length} active={active} onSelect={go} />
@@ -385,6 +385,7 @@ function ContactLinks() {
         {links.map(l => !l.href ? (
           <span
             key={l.label}
+            onClick={e => e.stopPropagation()}
             aria-disabled
             className="whitespace-nowrap text-white opacity-80"
             style={{ fontSize: 18, lineHeight: 1.1, letterSpacing: -0.9 }}
@@ -397,6 +398,7 @@ function ContactLinks() {
             href={l.href}
             target={l.href?.startsWith("http") ? "_blank" : undefined}
             rel="noreferrer"
+            onClick={e => e.stopPropagation()} // don't also open the card
             className={`group whitespace-nowrap text-white opacity-80 ${LINK_CLASS}`}
             style={{ fontSize: 18, lineHeight: 1.1, letterSpacing: -0.9 }}
           >
@@ -417,15 +419,30 @@ function ContactLinks() {
 // ─────────────────────────────────────────────────────────────────────────────
 // INTRO / OUTRO CARDS
 // ─────────────────────────────────────────────────────────────────────────────
-function PhotoCard({ slide, index, children }: { slide: Slide; index: number; children: React.ReactNode }) {
+function PhotoCard({ slide, index, tilt, onOpen, children }: {
+  slide: Slide;
+  index: number;
+  tilt: number; // degrees to rotate on hover
+  onOpen: () => void;
+  children: React.ReactNode;
+}) {
+  const [entered, setEntered] = useState(false);
   return (
     <motion.div
       data-slide={index}
-      className="absolute rounded-[18px] overflow-hidden"
+      className="absolute rounded-[18px] overflow-hidden cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
       style={{ left: slide.left, top: CARD_TOP, width: SMALL_W, height: CARD_H }}
+      role="link"
+      tabIndex={0}
+      aria-label="About Riddhi"
+      onClick={onOpen}
+      onKeyDown={e => { if (e.key === "Enter" && e.target === e.currentTarget) onOpen(); }}
       initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.9, ease: EASE_OUT }}
+      animate={entered ? { opacity: 1, scale: 1 } : { opacity: 1, scale: 1, transition: { duration: 0.9, ease: EASE_OUT } }}
+      onAnimationComplete={() => setEntered(true)}
+      transition={HOVER_SPRING}
+      whileHover={{ ...CARD_HOVER, rotate: tilt }}
+      whileTap={{ scale: 0.99, transition: { duration: 0.1 } }}
     >
       <img src={introBg} alt="" className="absolute inset-0 size-full object-cover" draggable={false} />
       <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.15)" }} />
@@ -440,9 +457,9 @@ const rise = (delay: number) => ({
   transition: { duration: 0.8, ease: EASE_OUT, delay },
 });
 
-function IntroCard({ slide }: { slide: Slide }) {
+function IntroCard({ slide, onOpen }: { slide: Slide; onOpen: () => void }) {
   return (
-    <PhotoCard slide={slide} index={0}>
+    <PhotoCard slide={slide} index={0} tilt={-2} onOpen={onOpen}>
       <div className="absolute flex flex-col items-start text-white" style={{ left: 113, top: 185, gap: 32 }}>
         <h1 style={{ fontSize: 72, lineHeight: 1.1, letterSpacing: -3.6, fontWeight: 500 }} className="whitespace-nowrap">
           <motion.span className="block" {...rise(0.35)}>
@@ -474,9 +491,9 @@ function IntroCard({ slide }: { slide: Slide }) {
   );
 }
 
-function OutroCard({ slide }: { slide: Slide }) {
+function OutroCard({ slide, onOpen }: { slide: Slide; onOpen: () => void }) {
   return (
-    <PhotoCard slide={slide} index={SLIDES.length - 1}>
+    <PhotoCard slide={slide} index={SLIDES.length - 1} tilt={2} onOpen={onOpen}>
       <div className="absolute flex flex-col items-start text-white" style={{ left: 68, top: 141, gap: 32 }}>
         <p style={{ fontSize: 42, lineHeight: 1.1, letterSpacing: -2.1, fontWeight: 500, width: 347 }}>
           True depth comes from applying everything you know to everything you do.
@@ -523,6 +540,7 @@ function ProjectSlide({
   parallax?: boolean;
 }) {
   const [hover, setHover] = useState(false);
+  const [entered, setEntered] = useState(false);
   const revealed = index <= Math.max(active, 0) + 1;
   const isActive = index === active;
   const fg = tone === "dark" ? "white" : "black";
@@ -594,15 +612,11 @@ function ProjectSlide({
         onKeyDown={e => { if (onOpen && e.key === "Enter") onOpen(); }}
         aria-label={title ? `Open ${title} case study` : onOpen ? heading : undefined}
         initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.15 + index * 0.08 }}
-        // Same hover as the Play page cards: lift, grow slightly, soft shadow
-        whileHover={onOpen ? {
-          scale: 1.02,
-          y: -6,
-          boxShadow: "0px 18px 40px rgba(0,0,0,0.16)",
-          transition: { type: "spring", stiffness: 260, damping: 24 },
-        } : undefined}
+        // Entrance timing applies only until the card has arrived, so leaving hover springs straight back
+        animate={entered ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, transition: { duration: 0.9, ease: EASE_OUT, delay: 0.15 + index * 0.08 } }}
+        onAnimationComplete={() => setEntered(true)}
+        transition={HOVER_SPRING}
+        whileHover={onOpen ? CARD_HOVER : undefined}
         whileTap={onOpen ? { scale: 0.99, transition: { duration: 0.1 } } : undefined}
       >
         <motion.div

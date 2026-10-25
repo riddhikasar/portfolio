@@ -22,6 +22,11 @@ export const MONO = "'Source Code Pro', ui-monospace, monospace";
 export const SERIF = "'EB Garamond', Georgia, serif";
 export const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
+// Card hover shared by Home and Play: lift, grow slightly, soft shadow. HOVER_SPRING is also the
+// card's resting transition, so it settles back immediately when the cursor leaves.
+export const HOVER_SPRING = { type: "spring", stiffness: 260, damping: 24 } as const;
+export const CARD_HOVER = { scale: 1.02, y: -6, boxShadow: "0px 18px 40px rgba(0,0,0,0.16)" };
+
 export type SitePage = "home" | "work" | "play" | "about";
 
 // Every link brightens and lifts slightly

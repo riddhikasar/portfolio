@@ -22,7 +22,7 @@ import art0409 from "@/assets/art/art_0409.avif";
 import art_izumi from "@/assets/art/art_izumi.avif";
 import { POEMS, type Poem } from "./poems";
 import {
-  CONTENT_TOP, EASE_OUT, GAP, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, SERIF,
+  CARD_HOVER, CONTENT_TOP, EASE_OUT, GAP, HOVER_SPRING, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, SERIF,
   TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -441,6 +441,8 @@ function PoemCard({ poem, fit = 1, animate = true, inView = false, delay = 0, st
 }) {
   const size = POEM_SIZE * fit;
   const shown = { opacity: 1, y: 0 };
+  const [entered, setEntered] = useState(false);
+  const entrance = { duration: 0.9, ease: EASE_OUT, delay };
   return (
     <motion.article
       {...(onOpen && {
@@ -451,7 +453,7 @@ function PoemCard({ poem, fit = 1, animate = true, inView = false, delay = 0, st
         onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => {
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(poem.title, e.currentTarget); }
         },
-        whileHover: { scale: 1.02, y: -6, boxShadow: "0px 18px 40px rgba(0,0,0,0.12)", transition: { type: "spring", stiffness: 260, damping: 24 } },
+        whileHover: { ...CARD_HOVER, boxShadow: "0px 18px 40px rgba(0,0,0,0.12)" },
         whileTap: { scale: 0.99, transition: { duration: 0.1 } },
         className: "cursor-zoom-in outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4",
       })}
@@ -468,10 +470,11 @@ function PoemCard({ poem, fit = 1, animate = true, inView = false, delay = 0, st
         ...style,
       }}
       initial={animate ? { opacity: 0, y: 40 } : false}
-      animate={inView ? undefined : shown}
-      whileInView={inView ? shown : undefined}
+      animate={inView ? undefined : entered ? shown : { ...shown, transition: entrance }}
+      whileInView={inView ? (entered ? shown : { ...shown, transition: entrance }) : undefined}
+      onAnimationComplete={() => setEntered(true)}
       viewport={{ once: true, amount: 0.15 }}
-      transition={{ duration: 0.9, ease: EASE_OUT, delay }}
+      transition={HOVER_SPRING}
     >
       <h3 className="m-0 underline" style={{ fontSize: size, fontWeight: 800, lineHeight: POEM_LINE, textUnderlinePosition: "from-font" }}>
         {poem.title}
@@ -527,6 +530,7 @@ function PhotoCard({ item, order, onOpen }: {
   const crop = item.crop;
   const title = item.title;
   const label = `View ${title?.text ?? item.alt}`;
+  const [entered, setEntered] = useState(false);
 
   // A title too long for its card shrinks to stay on one line (keeps 6% clear of each edge)
   useFontsReady();
@@ -553,17 +557,14 @@ function PhotoCard({ item, order, onOpen }: {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(item.id, e.currentTarget); }
       }}
       initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      whileHover={{
-        scale: 1.02,
-        y: -6,
-        boxShadow: "0px 18px 40px rgba(0,0,0,0.16)",
-        transition: { type: "spring", stiffness: 260, damping: 24 },
-      }}
+      // Entrance timing applies only until the card has arrived, so leaving hover springs straight back
+      whileInView={entered ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, transition: { duration: 0.9, ease: EASE_OUT, delay: Math.min(order, 6) * 0.06 } }}
+      onAnimationComplete={() => setEntered(true)}
+      whileHover={CARD_HOVER}
       whileTap={{ scale: 0.99, transition: { duration: 0.1 } }}
       exit={{ opacity: 0, transition: { duration: 0.25 } }}
       viewport={{ once: true, amount: 0.15 }}
-      transition={{ duration: 0.9, ease: EASE_OUT, delay: Math.min(order, 6) * 0.06 }}
+      transition={HOVER_SPRING}
     >
       <img
         src={item.src}
