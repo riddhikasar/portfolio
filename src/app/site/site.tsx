@@ -14,7 +14,7 @@ export const NAV_TOP = 32;
 export const CONTENT_TOP = 164; // where the first row of content starts below the menu
 export const GAP = 42; // space between cards; Figma: 32
 export const RADIUS = 18;
-export const MENU_SIZE = 24; // top menu and Play filters; Figma: 20
+export const MENU_SIZE = 22; // top menu and Play filters; Figma: 20
 
 // Figma uses Proxima Nova, which isn't licensed for web use; Figtree is the closest free match
 export const SANS = "'Figtree', system-ui, sans-serif";

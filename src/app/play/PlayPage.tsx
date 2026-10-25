@@ -285,9 +285,8 @@ const FILTERS: { id: Filter; label: string }[] = [
 
 export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void }) {
   const { scale, stageW } = useStageScale();
-  // Opens on Photos; ?view=all (used by the home page's Play card) opens on All
-  const [filter, setFilter] = useState<Filter>(() =>
-    new URLSearchParams(window.location.search).get("view") === "all" ? "all" : "photo");
+  // Play always opens on All
+  const [filter, setFilter] = useState<Filter>("all");
   const headerH = NAV_TOP * 2 + MENU_SIZE * 1.1;
   const contentW = stageW - 2 * NAV_X;
 
