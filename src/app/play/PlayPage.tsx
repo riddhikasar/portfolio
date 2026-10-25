@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import imgRiver from "@/assets/home/playground.avif";
 import img4546 from "@/assets/play/img_4546.avif";
@@ -122,6 +124,19 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
   const visible = placed.filter(p => filter === "all" || p.kind === filter);
   const headerH = NAV_TOP * 2 + 24;
 
+  // Viewer order follows the page: top to bottom, then left to right
+  const sequence = [...visible].sort((a, b) => a.y - b.y || a.x - b.x);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const openIndex = openId ? sequence.findIndex(p => p.id === openId) : -1;
+  const lastCard = useRef<HTMLElement | null>(null);
+
+  const open = (id: string, el: HTMLElement) => { lastCard.current = el; setOpenId(id); };
+  const close = useCallback(() => { setOpenId(null); lastCard.current?.focus(); }, []);
+  const step = useCallback((dir: 1 | -1) => {
+    if (openIndex < 0) return;
+    setOpenId(sequence[(openIndex + dir + sequence.length) % sequence.length].id);
+  }, [openIndex, sequence]);
+
   return (
     <MotionConfig reducedMotion="user">
       <div className="relative bg-white" style={{ fontFamily: SANS, minHeight: "100vh" }}>
@@ -140,7 +155,7 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
         <div className="relative" style={{ height: height * scale }}>
           <div className="absolute top-0 left-0 origin-top-left" style={{ width: stageW, height, transform: `scale(${scale})` }}>
             <AnimatePresence>
-              {visible.map((item, i) => <PhotoCard key={item.id} item={item} order={i} />)}
+              {visible.map((item, i) => <PhotoCard key={item.id} item={item} order={i} onOpen={open} />)}
             </AnimatePresence>
             {visible.length === 0 && (
               <motion.p
@@ -157,6 +172,7 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
           </div>
         </div>
       </div>
+      <Lightbox item={openIndex >= 0 ? sequence[openIndex] : null} scale={scale} onClose={close} onStep={step} />
     </MotionConfig>
   );
 }
@@ -196,24 +212,35 @@ function Filters({ value, onChange }: { value: Filter; onChange: (f: Filter) => 
 // ─────────────────────────────────────────────────────────────────────────────
 // PHOTO CARD
 // ─────────────────────────────────────────────────────────────────────────────
-function PhotoCard({ item, order }: { item: Placed; order: number }) {
+function PhotoCard({ item, order, onOpen }: {
+  item: Placed;
+  order: number;
+  onOpen: (id: string, el: HTMLElement) => void;
+}) {
   const crop = item.crop;
   const title = item.title;
-
-  // Not clickable, so no zoom: a soft light follows the cursor across the photo instead
-  const onPointerMove = (e: React.PointerEvent<HTMLElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty("--mx", `${((e.clientX - r.left) / r.width) * 100}%`);
-    e.currentTarget.style.setProperty("--my", `${((e.clientY - r.top) / r.height) * 100}%`);
-  };
+  const label = `View ${title?.text ?? item.alt}`;
 
   return (
     <motion.figure
-      className="group absolute m-0 overflow-hidden"
+      className="absolute m-0 overflow-hidden cursor-zoom-in outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
       style={{ left: item.x, top: item.y, width: item.width, height: item.height, borderRadius: RADIUS }}
-      onPointerMove={onPointerMove}
+      role="button"
+      tabIndex={0}
+      aria-label={label}
+      onClick={e => onOpen(item.id, e.currentTarget)}
+      onKeyDown={e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(item.id, e.currentTarget); }
+      }}
       initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
+      whileHover={{
+        scale: 1.02,
+        y: -6,
+        boxShadow: "0px 18px 40px rgba(0,0,0,0.16)",
+        transition: { type: "spring", stiffness: 260, damping: 24 },
+      }}
+      whileTap={{ scale: 0.99, transition: { duration: 0.1 } }}
       exit={{ opacity: 0, transition: { duration: 0.25 } }}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.9, ease: EASE_OUT, delay: Math.min(order, 6) * 0.06 }}
@@ -225,14 +252,6 @@ function PhotoCard({ item, order }: { item: Placed; order: number }) {
         draggable={false}
         className={crop ? "absolute max-w-none" : "absolute inset-0 size-full object-cover"}
         style={crop ? { width: `${crop.w}%`, height: `${crop.h}%`, left: `${crop.l}%`, top: `${crop.t}%` } : undefined}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100"
-        style={{
-          background: "radial-gradient(circle 280px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.55), rgba(255,255,255,0) 75%)",
-          mixBlendMode: "overlay",
-        }}
       />
       {title && (
         <figcaption
@@ -252,5 +271,130 @@ function PhotoCard({ item, order }: { item: Placed; order: number }) {
         </figcaption>
       )}
     </motion.figure>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LIGHTBOX — full photo over a blurred view of the page
+// ─────────────────────────────────────────────────────────────────────────────
+function Lightbox({ item, scale, onClose, onStep }: {
+  item: Placed | null;
+  scale: number;
+  onClose: () => void;
+  onStep: (dir: 1 | -1) => void;
+}) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const isOpen = item !== null;
+
+  // Keyboard, scroll lock and focus while open
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowRight") onStep(1);
+      else if (e.key === "ArrowLeft") onStep(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen, onClose, onStep]);
+
+  const edge = NAV_X * scale;
+  const arrowSize = 56 * scale;
+
+  return createPortal(
+    <AnimatePresence>
+      {item && (
+        <motion.div
+          key="lightbox"
+          className="fixed inset-0 z-50"
+          role="dialog"
+          aria-modal="true"
+          aria-label={item.title?.text ?? item.alt}
+          style={{ fontFamily: SANS }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3, ease: EASE_OUT }}
+        >
+          {/* Blurred page behind */}
+          <div
+            className="absolute inset-0 cursor-zoom-out"
+            style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(28px) saturate(1.1)", WebkitBackdropFilter: "blur(28px) saturate(1.1)" }}
+            onClick={onClose}
+          />
+
+          {/* Photo + title */}
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center" style={{ gap: 16 * scale }}>
+            <AnimatePresence mode="wait">
+              <motion.figure
+                key={item.id}
+                className="m-0 flex flex-col items-center pointer-events-auto"
+                style={{ gap: 16 * scale }}
+                initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.35, ease: EASE_OUT }}
+              >
+                <img
+                  src={item.src}
+                  alt={item.alt}
+                  draggable={false}
+                  className="block object-contain"
+                  style={{ maxWidth: "78vw", maxHeight: "78vh", borderRadius: 12 * scale, boxShadow: "0 24px 60px rgba(0,0,0,0.18)" }}
+                />
+                {item.title && (
+                  <figcaption style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 20 * scale, color: "black", opacity: 0.75 }}>
+                    {item.title.text}
+                  </figcaption>
+                )}
+              </motion.figure>
+            </AnimatePresence>
+          </div>
+
+          {/* Close — sits where the filters are */}
+          <div className="absolute" style={{ right: edge, top: NAV_TOP * scale }}>
+            <button
+              ref={closeRef}
+              onClick={onClose}
+              className={`cursor-pointer ${LINK_CLASS}`}
+              style={{ fontSize: 20 * scale, lineHeight: 1.1, letterSpacing: -1 * scale, color: "black" }}
+            >
+              Close
+            </button>
+          </div>
+
+          {/* Previous / next */}
+          {([-1, 1] as const).map(dir => (
+            <motion.button
+              key={dir}
+              onClick={() => onStep(dir)}
+              aria-label={dir < 0 ? "Previous photo" : "Next photo"}
+              className="absolute top-1/2 flex items-center justify-center rounded-full bg-white cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={{
+                [dir < 0 ? "left" : "right"]: edge,
+                width: arrowSize,
+                height: arrowSize,
+                marginTop: -arrowSize / 2,
+                boxShadow: "0 6px 20px rgba(0,0,0,0.10)",
+              }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            >
+              {dir < 0
+                ? <ChevronLeft size={22 * scale} strokeWidth={1.75} color="black" />
+                : <ChevronRight size={22 * scale} strokeWidth={1.75} color="black" />}
+            </motion.button>
+          ))}
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
   );
 }
