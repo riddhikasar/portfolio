@@ -274,6 +274,15 @@ function PhotoCard({ item, order, onOpen }: {
   );
 }
 
+// Largest box with the card's aspect ratio that fits within 78% of the viewport
+function fitFrame(item: Placed) {
+  const ratio = item.w / item.h;
+  const maxW = window.innerWidth * 0.78;
+  const maxH = window.innerHeight * 0.78;
+  const width = Math.min(maxW, maxH * ratio);
+  return { width, height: width / ratio };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // LIGHTBOX — full photo over a blurred view of the page
 // ─────────────────────────────────────────────────────────────────────────────
@@ -341,13 +350,21 @@ function Lightbox({ item, scale, onClose, onStep }: {
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.35, ease: EASE_OUT }}
               >
-                <img
-                  src={item.src}
-                  alt={item.alt}
-                  draggable={false}
-                  className="block object-contain"
-                  style={{ maxWidth: "78vw", maxHeight: "78vh", borderRadius: 12 * scale, boxShadow: "0 24px 60px rgba(0,0,0,0.18)" }}
-                />
+                {/* Same framing as the card: its aspect ratio and crop, just larger */}
+                <div
+                  className="relative overflow-hidden"
+                  style={{ ...fitFrame(item), borderRadius: 12 * scale, boxShadow: "0 24px 60px rgba(0,0,0,0.18)" }}
+                >
+                  <img
+                    src={item.src}
+                    alt={item.alt}
+                    draggable={false}
+                    className={item.crop ? "absolute max-w-none" : "absolute inset-0 size-full object-cover"}
+                    style={item.crop
+                      ? { width: `${item.crop.w}%`, height: `${item.crop.h}%`, left: `${item.crop.l}%`, top: `${item.crop.t}%` }
+                      : undefined}
+                  />
+                </div>
                 {item.title && (
                   <figcaption style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 20 * scale, color: "black", opacity: 0.75 }}>
                     {item.title.text}
