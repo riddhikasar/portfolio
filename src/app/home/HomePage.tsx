@@ -596,11 +596,19 @@ function ProjectSlide({
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.15 + index * 0.08 }}
+        // Same hover as the Play page cards: lift, grow slightly, soft shadow
+        whileHover={onOpen ? {
+          scale: 1.02,
+          y: -6,
+          boxShadow: "0px 18px 40px rgba(0,0,0,0.16)",
+          transition: { type: "spring", stiffness: 260, damping: 24 },
+        } : undefined}
+        whileTap={onOpen ? { scale: 0.99, transition: { duration: 0.1 } } : undefined}
       >
         <motion.div
           className="absolute inset-0"
           style={{ x: parallax ? mediaX : 0 }}
-          animate={{ scale: (parallax ? 1.05 : 1) * (hover ? 1.03 : 1) }}
+          animate={{ scale: parallax ? 1.05 : 1 }}
           transition={{ duration: 0.8, ease: EASE_OUT }}
         >
           {media}
