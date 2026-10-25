@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import imgRiver from "@/assets/home/playground.avif";
 import img4546 from "@/assets/play/img_4546.avif";
@@ -13,6 +13,13 @@ import img3171 from "@/assets/play/img_3171.avif";
 import img8969 from "@/assets/play/img_8969.avif";
 import img2358 from "@/assets/play/img_2358.avif";
 import img4763 from "@/assets/play/img_4763.avif";
+import art1074 from "@/assets/art/art_1074.avif";
+import artMoon from "@/assets/art/art_moon.avif";
+import artKrishna from "@/assets/art/art_krishna.avif";
+import art4725 from "@/assets/art/art_4725.avif";
+import art0179 from "@/assets/art/art_0179.avif";
+import art0409 from "@/assets/art/art_0409.avif";
+import { POEMS } from "./poems";
 import {
   CONTENT_TOP, EASE_OUT, GAP, LINK_CLASS, MONO, NAV_TOP, NAV_X, RADIUS, SANS, SERIF,
   TopNav, useStageScale, type SitePage,
@@ -26,17 +33,18 @@ type Kind = "photo" | "poem" | "art";
 type Crop = { w: number; h: number; l: number; t: number }; // % of the frame
 type Item = {
   id: string;
-  kind: Kind;
+  kind: "photo" | "art";
   src: string;
   alt: string;
   w: number;
   h: number;
   crop?: Crop;
-  // x is the title's centre, or its left edge when align is "left" (to line up with something in the photo)
+  // x is the title's centre, or its left edge when align is "left" (to line up with something in the image)
   title?: { text: string; color: string; x: number; y: number; align?: "left" };
 };
 
 const ITEMS: Record<string, Item> = {
+  // ── Photos
   river: { id: "river", kind: "photo", src: imgRiver, alt: "Frozen river under a bridge's shadow", w: 689.2, h: 371.75,
     crop: { w: 100.04, h: 100, l: -0.02, t: 0 },
     title: { text: "The Softness of Winter", color: "#573d3c", x: 0.8469, y: 0.8835 } },
@@ -64,46 +72,68 @@ const ITEMS: Record<string, Item> = {
     title: { text: "Awe", color: "#c7ecff", x: 0.4851, y: 0.9403 } },
   train: { id: "train", kind: "photo", src: img4763, alt: "Person sitting outside a train station", w: 419.83, h: 458.88,
     title: { text: "The last train", color: "#a5a5a5", x: 0.7614, y: 0.6664 } },
+
+  // ── Art
+  magnanimous: { id: "magnanimous", kind: "art", src: art1074, alt: "Digital painting of a robed celestial figure", w: 472, h: 630,
+    title: { text: "Magnanimous", color: "#ffffec", x: 0.5, y: 0.935 } },
+  moon: { id: "moon", kind: "art", src: artMoon, alt: "Digital painting of a white-haired figure in black", w: 472, h: 629,
+    title: { text: "the moon is beautiful, isn’t it?", color: "#fcfcfc", x: 0.4995, y: 0.938 } },
+  serenity: { id: "serenity", kind: "art", src: artKrishna, alt: "Digital painting of Krishna holding a rose", w: 399, h: 532,
+    title: { text: "Serenity", color: "#5099a1", x: 0.757, y: 0.021 } },
+  traitor: { id: "traitor", kind: "art", src: art4725, alt: "Two figures facing each other across a glowing sea", w: 842, h: 383,
+    title: { text: "traitor", color: "#fdf7e7", x: 0.511, y: 0.042 } },
+  sketch: { id: "sketch", kind: "art", src: art0179, alt: "Pencil sketch of a girl resting her chin on her hand", w: 473, h: 520,
+    // left edge sits just after the signature mark
+    title: { text: "A sketch", color: "#56534c", x: 0.258, y: 0.933, align: "left" } },
+  pines: { id: "pines", kind: "art", src: art0409, alt: "Ink drawing of a swordsman with flowing hair", w: 356, h: 659,
+    title: { text: "wind blowing against a forest of pine trees", color: "#0f0c06", x: 0.503, y: 0.965 } },
 };
 
-// Layout from the Figma frame: a wide left column, and rows of pairs on the right
-const LEFT_COLUMN = ["river", "trees", "relief", "painting"];
-const RIGHT_ROWS = [["sunflowers", "path"], ["statue", "tower"], ["rotunda", "train"]];
-const LEFT_SHARE = 689 / (689 + 963); // left column's share of the content width in Figma
+// Columns of rows; each row's items sit side by side. Column shares come from Figma.
+type Column = { share: number; rows: string[][] };
+const PHOTO_COLUMNS: Column[] = [
+  { share: 689, rows: [["river"], ["trees"], ["relief"], ["painting"]] },
+  { share: 963, rows: [["sunflowers", "path"], ["statue", "tower"], ["rotunda", "train"]] },
+];
+const ART_COLUMNS: Column[] = [
+  { share: 472, rows: [["magnanimous"], ["moon"]] },
+  { share: 399, rows: [["serenity"]] },
+  { share: 842, rows: [["traitor"], ["sketch", "pines"]] },
+];
 const BOTTOM_MARGIN = 120;
 
 type Placed = Item & { x: number; y: number; width: number; height: number };
 
-function layout(stageW: number) {
-  const contentW = stageW - 2 * NAV_X;
-  const leftW = (contentW - GAP) * LEFT_SHARE;
-  const rightX = NAV_X + leftW + GAP;
-  const rightW = contentW - GAP - leftW;
+function layoutColumns(columns: Column[], top: number, contentW: number) {
+  const total = columns.reduce((t, c) => t + c.share, 0);
+  const usable = contentW - GAP * (columns.length - 1);
   const placed: Placed[] = [];
+  let x = NAV_X;
+  let bottom = top;
 
-  let y = CONTENT_TOP;
-  for (const id of LEFT_COLUMN) {
-    const it = ITEMS[id];
-    const height = leftW * (it.h / it.w);
-    placed.push({ ...it, x: NAV_X, y, width: leftW, height });
-    y += height + GAP;
+  for (const col of columns) {
+    const colW = usable * (col.share / total);
+    let y = top;
+    for (const row of col.rows) {
+      // Items in a row split the width in their Figma proportions and keep their own heights
+      const items = row.map(id => ITEMS[id]);
+      const rowUsable = colW - GAP * (items.length - 1);
+      const widthSum = items.reduce((t, it) => t + it.w, 0);
+      let ix = x;
+      let rowH = 0;
+      for (const it of items) {
+        const w = rowUsable * (it.w / widthSum);
+        const h = w * (it.h / it.w);
+        placed.push({ ...it, x: ix, y, width: w, height: h });
+        ix += w + GAP;
+        rowH = Math.max(rowH, h);
+      }
+      y += rowH + GAP;
+    }
+    bottom = Math.max(bottom, y - GAP);
+    x += colW + GAP;
   }
-  let bottom = y - GAP;
-
-  y = CONTENT_TOP;
-  for (const row of RIGHT_ROWS) {
-    const [a, b] = row.map(id => ITEMS[id]);
-    const aW = (rightW - GAP) * (a.w / (a.w + b.w));
-    const bW = rightW - GAP - aW;
-    const aH = aW * (a.h / a.w);
-    const bH = bW * (b.h / b.w);
-    placed.push({ ...a, x: rightX, y, width: aW, height: aH });
-    placed.push({ ...b, x: rightX + aW + GAP, y, width: bW, height: bH });
-    y += Math.max(aH, bH) + GAP;
-  }
-  bottom = Math.max(bottom, y - GAP);
-
-  return { placed, height: bottom + BOTTOM_MARGIN };
+  return { placed, bottom };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -120,12 +150,32 @@ const FILTERS: { id: Filter; label: string }[] = [
 export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void }) {
   const { scale, stageW } = useStageScale();
   const [filter, setFilter] = useState<Filter>("photo");
-  const { placed, height } = layout(stageW);
-  const visible = placed.filter(p => filter === "all" || p.kind === filter);
   const headerH = NAV_TOP * 2 + 24;
+  const contentW = stageW - 2 * NAV_X;
+
+  // Sections stack in this order; "All" shows every one
+  const showPhotos = filter === "all" || filter === "photo";
+  const showArt = filter === "all" || filter === "art";
+  const showPoems = filter === "all" || filter === "poem";
+
+  const placed: Placed[] = [];
+  let top = CONTENT_TOP;
+  if (showPhotos) {
+    const r = layoutColumns(PHOTO_COLUMNS, top, contentW);
+    placed.push(...r.placed);
+    top = r.bottom + GAP;
+  }
+  if (showArt) {
+    const r = layoutColumns(ART_COLUMNS, top, contentW);
+    placed.push(...r.placed);
+    top = r.bottom + GAP;
+  }
+  const poemsTop = top;
+  const [poemsH, setPoemsH] = useState(0);
+  const height = (showPoems ? poemsTop + poemsH : top - GAP) + BOTTOM_MARGIN;
 
   // Viewer order follows the page: top to bottom, then left to right
-  const sequence = [...visible].sort((a, b) => a.y - b.y || a.x - b.x);
+  const sequence = [...placed].sort((a, b) => a.y - b.y || a.x - b.x);
   const [openId, setOpenId] = useState<string | null>(null);
   const openIndex = openId ? sequence.findIndex(p => p.id === openId) : -1;
   const lastCard = useRef<HTMLElement | null>(null);
@@ -140,7 +190,7 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
   return (
     <MotionConfig reducedMotion="user">
       <div className="relative bg-white" style={{ fontFamily: SANS, minHeight: "100vh" }}>
-        {/* Fixed header: menu + filters, fading out over the photos as they scroll under */}
+        {/* Fixed header: menu + filters, fading out over the content as it scrolls under */}
         <div
           className="fixed top-0 left-0 right-0 z-30 pointer-events-none"
           style={{ height: headerH * scale, background: "linear-gradient(#ffffff 65%, rgba(255,255,255,0))" }}
@@ -151,29 +201,88 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
           </div>
         </div>
 
-        {/* Photo wall */}
+        {/* Wall */}
         <div className="relative" style={{ height: height * scale }}>
           <div className="absolute top-0 left-0 origin-top-left" style={{ width: stageW, height, transform: `scale(${scale})` }}>
             <AnimatePresence>
-              {visible.map((item, i) => <PhotoCard key={item.id} item={item} order={i} onOpen={open} />)}
+              {placed.map((item, i) => <PhotoCard key={item.id} item={item} order={i} onOpen={open} />)}
             </AnimatePresence>
-            {visible.length === 0 && (
-              <motion.p
-                key={filter}
-                className="absolute"
-                style={{ left: NAV_X, top: CONTENT_TOP, fontSize: 20, lineHeight: 1.1, letterSpacing: -1, color: "black", opacity: 0.4 }}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 0.4, y: 0 }}
-                transition={{ duration: 0.5, ease: EASE_OUT }}
-              >
-                Nothing here yet — check back soon.
-              </motion.p>
-            )}
+            {showPoems && <Poems key={filter} top={poemsTop} width={contentW} onHeight={setPoemsH} />}
           </div>
         </div>
       </div>
       <Lightbox item={openIndex >= 0 ? sequence[openIndex] : null} scale={scale} onClose={close} onStep={step} />
     </MotionConfig>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POEMS — cards fill the content width with the same gaps as the photo wall
+// ─────────────────────────────────────────────────────────────────────────────
+function Poems({ top, width, onHeight }: { top: number; width: number; onHeight: (h: number) => void }) {
+  // Lines never wrap. Cards take their text's width and grow to fill the row; if the row's natural
+  // width is wider than the page, the whole row scales down to fit.
+  const measureRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [natural, setNatural] = useState(width);
+  useLayoutEffect(() => {
+    const measure = () => { if (measureRef.current) setNatural(measureRef.current.offsetWidth); };
+    measure();
+    document.fonts?.ready.then(measure);
+  }, []);
+  const fit = Math.min(1, width / natural);
+
+  useLayoutEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    const report = () => onHeight(el.offsetHeight * fit);
+    report();
+    const ro = new ResizeObserver(report);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [onHeight, fit]);
+
+  const cards = (animate: boolean) => POEMS.map((poem, i) => (
+    <motion.article
+      key={poem.title}
+      style={{
+        flex: "1 0 auto",
+        background: "#f3f3f3",
+        borderRadius: RADIUS,
+        padding: 24,
+        fontFamily: SERIF,
+        fontSize: 20,
+        lineHeight: "normal",
+        color: "black",
+        whiteSpace: "pre",
+      }}
+      initial={animate ? { opacity: 0, y: 40 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.9, ease: EASE_OUT, delay: i * 0.08 }}
+    >
+      <h3 className="m-0 underline" style={{ fontSize: 20, fontWeight: 800, textUnderlinePosition: "from-font" }}>
+        {poem.title}
+      </h3>
+      {poem.stanzas.map((stanza, j) => (
+        <p key={j} className="m-0" style={{ marginTop: "1.2em", fontWeight: 500 }}>{stanza}</p>
+      ))}
+    </motion.article>
+  ));
+
+  return (
+    <>
+      {/* Invisible copy at natural width, used for measuring */}
+      <div ref={measureRef} aria-hidden className="absolute flex invisible pointer-events-none" style={{ left: 0, top: 0, width: "max-content", gap: GAP }}>
+        {cards(false)}
+      </div>
+      <div
+        ref={rowRef}
+        className="absolute flex items-start origin-top-left"
+        style={{ left: NAV_X, top, width: width / fit, gap: GAP, transform: fit < 1 ? `scale(${fit})` : undefined }}
+      >
+        {cards(true)}
+      </div>
+    </>
   );
 }
 
@@ -221,6 +330,10 @@ function PhotoCard({ item, order, onOpen }: {
   const title = item.title;
   const label = `View ${title?.text ?? item.alt}`;
 
+  // A title too long for its card shrinks to stay on one line (keeps 6% clear of each edge)
+  useFontsReady();
+  const titleFit = title ? Math.min(1, (item.width * 0.88) / textWidth(title.text, `500 18px ${SERIF}`)) : 1;
+
   return (
     <motion.figure
       className="absolute m-0 overflow-hidden cursor-zoom-in outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
@@ -262,7 +375,7 @@ function PhotoCard({ item, order, onOpen }: {
             transform: title.align === "left" ? undefined : "translateX(-50%)",
             fontFamily: SERIF,
             fontWeight: 500,
-            fontSize: 18,
+            fontSize: 18 * titleFit,
             lineHeight: "normal",
             color: title.color,
           }}
@@ -272,6 +385,28 @@ function PhotoCard({ item, order, onOpen }: {
       )}
     </motion.figure>
   );
+}
+
+// Text width in px for a CSS font shorthand (cached)
+const textWidths = new Map<string, number>();
+let measureCtx: CanvasRenderingContext2D | null = null;
+function textWidth(text: string, font: string) {
+  const key = `${font}|${text}|${document.fonts?.status}`;
+  let w = textWidths.get(key);
+  if (w === undefined) {
+    measureCtx ??= document.createElement("canvas").getContext("2d");
+    if (!measureCtx) return 0;
+    measureCtx.font = font;
+    w = measureCtx.measureText(text).width;
+    textWidths.set(key, w);
+  }
+  return w;
+}
+
+// Re-render once web fonts have loaded so text measurements use the real font
+function useFontsReady() {
+  const [, setReady] = useState(document.fonts?.status === "loaded");
+  useEffect(() => { document.fonts?.ready.then(() => setReady(true)); }, []);
 }
 
 // Largest box with the card's aspect ratio that fits within 78% of the viewport
@@ -375,15 +510,19 @@ function Lightbox({ item, scale, onClose, onStep }: {
           </div>
 
           {/* Close — sits where the filters are */}
-          <div className="absolute" style={{ right: edge, top: NAV_TOP * scale }}>
-            <button
+          <div className="absolute" style={{ right: edge, top: (NAV_TOP - 5) * scale }}>
+            <motion.button
               ref={closeRef}
               onClick={onClose}
-              className={`cursor-pointer ${LINK_CLASS}`}
-              style={{ fontSize: 20 * scale, lineHeight: 1.1, letterSpacing: -1 * scale, color: "black" }}
+              aria-label="Close"
+              className="flex items-center justify-center cursor-pointer outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4"
+              style={{ width: 32 * scale, height: 32 * scale, color: "black" }}
+              whileHover={{ rotate: 90, scale: 1.1 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              Close
-            </button>
+              <X size={28 * scale} strokeWidth={1.5} />
+            </motion.button>
           </div>
 
           {/* Previous / next */}

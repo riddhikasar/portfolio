@@ -558,7 +558,12 @@ function ProjectSlide({
           style={{ fontSize: 42, lineHeight: 1.1, letterSpacing: -2.1, fontWeight: 500, color: palette.ink, transition: "color 0.45s ease-in-out" }}
         >
           {headingWords.map((w, i) => (
-            <span key={i} className="inline-block overflow-hidden align-bottom" style={{ paddingBottom: 4, marginBottom: -4 }}>
+            <span
+              key={i}
+              className="inline-block overflow-hidden align-bottom"
+              // Padding lets glyphs that overhang their box (tight tracking) show; negative margin keeps spacing unchanged
+              style={{ padding: "0 0.12em 4px", margin: "0 -0.12em -4px" }}
+            >
               <motion.span
                 className="inline-block"
                 initial={{ y: "110%" }}
