@@ -105,16 +105,11 @@ const ART_COLUMNS: Column[] = [
 ];
 const BOTTOM_MARGIN = 120;
 
-// "All": one masonry of everything, in the reading order of the Figma "All" frame.
-// Each entry drops into the shortest column, so columns stay even.
-const ALL_ORDER: ({ item: string } | { poem: string })[] = [
-  { item: "river" }, { item: "magnanimous" }, { poem: "cotton candy skies" }, { item: "path" },
-  { item: "sketch" }, { poem: "[...]" }, { item: "train" }, { item: "sunflowers" },
-  { item: "trees" }, { item: "serenity" }, { item: "izumi" }, { item: "painting" },
-  { poem: "I wish I may, I wish I might..." }, { item: "rotunda" }, { item: "relief" }, { item: "traitor" },
-  { item: "statue" }, { poem: "Some Proof" }, { item: "tower" }, { item: "pines" }, { item: "moon" },
-];
-const ALL_COLUMNS = 3;
+// "All" keeps photos and art at the same sizes as their own pages:
+// Photos, with one poem filling the space under the left column → a row of poems → Art
+const ALL_FILLER_POEM = "cotton candy skies";
+const ALL_POEM_ROW = ["[...]", "Some Proof", "I wish I may, I wish I might..."];
+const poemByTitle = (t: string) => POEMS.find(p => p.title === t)!;
 
 // Poem card metrics (design px)
 const POEM_PAD = 24;
@@ -138,74 +133,15 @@ function poemHeight(poem: Poem, fit: number) {
   return 2 * POEM_PAD + size * POEM_LINE * (1 + lines) + size * POEM_STANZA_GAP * poem.stanzas.length;
 }
 
-type PlacedPoem = { poem: Poem; x: number; y: number; width: number; height: number; fit: number };
-
-type AllEntry = (typeof ALL_ORDER)[number];
-
-function entryHeight(entry: AllEntry, colW: number) {
-  if ("item" in entry) { const it = ITEMS[entry.item]; return colW * (it.h / it.w); }
-  const poem = POEMS.find(p => p.title === entry.poem)!;
-  return poemHeight(poem, poemFit(poem, colW));
-}
-
-// Column bottoms when entries drop, in order, into the shortest column
-function columnBottoms(heights: number[]) {
-  const cols = Array(ALL_COLUMNS).fill(0);
-  for (const h of heights) { const c = cols.indexOf(Math.min(...cols)); cols[c] += h + GAP; }
-  return cols;
-}
-
-// Swap nearby entries while it evens out the column bottoms (keeps roughly the Figma order)
-function balancedOrder(colW: number) {
-  const order = [...ALL_ORDER];
-  const hs = order.map(e => entryHeight(e, colW));
-  const spread = () => { const b = columnBottoms(hs); return Math.max(...b) - Math.min(...b); };
-  let best = spread();
-  for (let improved = true; improved;) {
-    improved = false;
-    for (let i = 0; i < order.length; i++) {
-      for (let j = i + 1; j <= Math.min(order.length - 1, i + 3); j++) {
-        [order[i], order[j]] = [order[j], order[i]]; [hs[i], hs[j]] = [hs[j], hs[i]];
-        const sp = spread();
-        if (sp < best - 1) { best = sp; improved = true; }
-        else { [order[i], order[j]] = [order[j], order[i]]; [hs[i], hs[j]] = [hs[j], hs[i]]; }
-      }
-    }
-  }
-  return order;
-}
-
-function layoutAll(top: number, contentW: number) {
-  const colW = (contentW - GAP * (ALL_COLUMNS - 1)) / ALL_COLUMNS;
-  const heights = Array(ALL_COLUMNS).fill(top);
-  const placed: Placed[] = [];
-  const poems: PlacedPoem[] = [];
-  for (const entry of balancedOrder(colW)) {
-    const col = heights.indexOf(Math.min(...heights));
-    const x = NAV_X + col * (colW + GAP);
-    const y = heights[col];
-    let h: number;
-    if ("item" in entry) {
-      const it = ITEMS[entry.item];
-      h = colW * (it.h / it.w);
-      placed.push({ ...it, x, y, width: colW, height: h });
-    } else {
-      const poem = POEMS.find(p => p.title === entry.poem)!;
-      const fit = poemFit(poem, colW);
-      h = poemHeight(poem, fit);
-      poems.push({ poem, x, y, width: colW, height: h, fit });
-    }
-    heights[col] = y + h + GAP;
-  }
-  return { placed, poems, bottom: Math.max(...heights) - GAP };
-}
-
 type Placed = Item & { x: number; y: number; width: number; height: number };
+type PlacedPoem = { poem: Poem; x: number; y: number; width: number; height: number; fit: number };
+type ViewEntry = { key: string } & ({ kind: "image"; item: Placed } | { kind: "poem"; poem: Poem });
 
 function layoutColumns(columns: Column[], top: number, contentW: number) {
   const total = columns.reduce((t, c) => t + c.share, 0);
   const usable = contentW - GAP * (columns.length - 1);
   const placed: Placed[] = [];
+  const columnEnds: { x: number; width: number; bottom: number }[] = [];
   let x = NAV_X;
   let bottom = top;
 
@@ -229,9 +165,10 @@ function layoutColumns(columns: Column[], top: number, contentW: number) {
       y += rowH + GAP;
     }
     bottom = Math.max(bottom, y - GAP);
+    columnEnds.push({ x, width: colW, bottom: y - GAP });
     x += colW + GAP;
   }
-  return { placed, bottom };
+  return { placed, bottom, columns: columnEnds };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -254,29 +191,50 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
   useFontsReady(); // poem sizes are measured from the real font
 
   let placed: Placed[] = [];
-  let allPoems: PlacedPoem[] = [];
+  let filler: PlacedPoem | null = null;
+  let poemRow: { top: number; poems: Poem[] } | null = null;
+  const [rowH, setRowH] = useState(0);
   let bottom = CONTENT_TOP;
-  if (filter === "all") {
-    const r = layoutAll(CONTENT_TOP, contentW);
-    placed = r.placed; allPoems = r.poems; bottom = r.bottom;
-  } else if (filter === "photo" || filter === "art") {
+
+  if (filter === "photo" || filter === "art") {
     const r = layoutColumns(filter === "photo" ? PHOTO_COLUMNS : ART_COLUMNS, CONTENT_TOP, contentW);
     placed = r.placed; bottom = r.bottom;
+  } else if (filter === "poem") {
+    poemRow = { top: CONTENT_TOP, poems: POEMS };
+    bottom = CONTENT_TOP + rowH;
+  } else {
+    const photos = layoutColumns(PHOTO_COLUMNS, CONTENT_TOP, contentW);
+    // The shortest photo column gets a poem that runs down to the bottom of the block
+    const col = photos.columns.reduce((a, c) => (c.bottom < a.bottom ? c : a));
+    const poem = poemByTitle(ALL_FILLER_POEM);
+    const fit = poemFit(poem, col.width);
+    const y = col.bottom + GAP;
+    filler = { poem, x: col.x, y, width: col.width, height: Math.max(poemHeight(poem, fit), photos.bottom - y), fit };
+    const blockBottom = Math.max(photos.bottom, y + filler.height);
+
+    poemRow = { top: blockBottom + GAP, poems: ALL_POEM_ROW.map(poemByTitle) };
+    const art = layoutColumns(ART_COLUMNS, poemRow.top + rowH + GAP, contentW);
+    placed = [...photos.placed, ...art.placed];
+    bottom = art.bottom;
   }
-  const [poemsH, setPoemsH] = useState(0);
-  const height = (filter === "poem" ? CONTENT_TOP + poemsH : bottom) + BOTTOM_MARGIN;
+  const height = bottom + BOTTOM_MARGIN;
 
   // Viewer order follows the page: top to bottom, then left to right
-  const sequence = [...placed].sort((a, b) => a.y - b.y || a.x - b.x);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const openIndex = openId ? sequence.findIndex(p => p.id === openId) : -1;
+  const entries: (ViewEntry & { x: number; y: number })[] = [
+    ...placed.map(it => ({ key: it.id, kind: "image" as const, item: it, x: it.x, y: it.y })),
+    ...(filler ? [{ key: filler.poem.title, kind: "poem" as const, poem: filler.poem, x: filler.x, y: filler.y }] : []),
+    ...(poemRow ? poemRow.poems.map((poem, i) => ({ key: poem.title, kind: "poem" as const, poem, x: NAV_X + i, y: poemRow!.top })) : []),
+  ];
+  const sequence = entries.sort((a, b) => a.y - b.y || a.x - b.x);
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const openIndex = openKey ? sequence.findIndex(e => e.key === openKey) : -1;
   const lastCard = useRef<HTMLElement | null>(null);
 
-  const open = (id: string, el: HTMLElement) => { lastCard.current = el; setOpenId(id); };
-  const close = useCallback(() => { setOpenId(null); lastCard.current?.focus(); }, []);
+  const open = (key: string, el: HTMLElement) => { lastCard.current = el; setOpenKey(key); };
+  const close = useCallback(() => { setOpenKey(null); lastCard.current?.focus(); }, []);
   const step = useCallback((dir: 1 | -1) => {
     if (openIndex < 0) return;
-    setOpenId(sequence[(openIndex + dir + sequence.length) % sequence.length].id);
+    setOpenKey(sequence[(openIndex + dir + sequence.length) % sequence.length].key);
   }, [openIndex, sequence]);
 
   return (
@@ -299,21 +257,23 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
             <AnimatePresence>
               {placed.map((item, i) => <PhotoCard key={item.id} item={item} order={i} onOpen={open} />)}
             </AnimatePresence>
-            {filter === "poem" && <Poems top={CONTENT_TOP} width={contentW} onHeight={setPoemsH} />}
-            {allPoems.map((p, i) => (
+            {filler && (
               <PoemCard
-                key={p.poem.title}
-                poem={p.poem}
-                fit={p.fit}
-                delay={Math.min(i, 6) * 0.06}
+                key={`filler-${filler.poem.title}`}
+                poem={filler.poem}
+                fit={filler.fit}
                 inView
-                style={{ position: "absolute", left: p.x, top: p.y, width: p.width, height: p.height }}
+                onOpen={open}
+                style={{ position: "absolute", left: filler.x, top: filler.y, width: filler.width, height: filler.height }}
               />
-            ))}
+            )}
+            {poemRow && (
+              <Poems key={filter} poems={poemRow.poems} top={poemRow.top} width={contentW} onHeight={setRowH} onOpen={open} />
+            )}
           </div>
         </div>
       </div>
-      <Lightbox item={openIndex >= 0 ? sequence[openIndex] : null} scale={scale} onClose={close} onStep={step} />
+      <Lightbox entry={openIndex >= 0 ? sequence[openIndex] : null} scale={scale} onClose={close} onStep={step} />
     </MotionConfig>
   );
 }
@@ -321,7 +281,13 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
 // ─────────────────────────────────────────────────────────────────────────────
 // POEMS — cards fill the content width with the same gaps as the photo wall
 // ─────────────────────────────────────────────────────────────────────────────
-function Poems({ top, width, onHeight }: { top: number; width: number; onHeight: (h: number) => void }) {
+function Poems({ poems, top, width, onHeight, onOpen }: {
+  poems: Poem[];
+  top: number;
+  width: number;
+  onHeight: (h: number) => void;
+  onOpen: (key: string, el: HTMLElement) => void;
+}) {
   // Lines never wrap. Cards take their text's width and grow to fill the row; if the row's natural
   // width is wider than the page, the whole row scales down to fit.
   const measureRef = useRef<HTMLDivElement>(null);
@@ -331,7 +297,7 @@ function Poems({ top, width, onHeight }: { top: number; width: number; onHeight:
     const measure = () => { if (measureRef.current) setNatural(measureRef.current.offsetWidth); };
     measure();
     document.fonts?.ready.then(measure);
-  }, []);
+  }, [poems]);
   const fit = Math.min(1, width / natural);
 
   useLayoutEffect(() => {
@@ -344,8 +310,16 @@ function Poems({ top, width, onHeight }: { top: number; width: number; onHeight:
     return () => ro.disconnect();
   }, [onHeight, fit]);
 
-  const cards = (animate: boolean) => POEMS.map((poem, i) => (
-    <PoemCard key={poem.title} poem={poem} animate={animate} delay={i * 0.08} style={{ flex: "1 0 auto" }} />
+  const cards = (live: boolean) => poems.map((poem, i) => (
+    <PoemCard
+      key={poem.title}
+      poem={poem}
+      animate={live}
+      inView={live}
+      delay={i * 0.08}
+      onOpen={live ? onOpen : undefined}
+      style={{ flex: "1 0 auto" }}
+    />
   ));
 
   return (
@@ -365,18 +339,31 @@ function Poems({ top, width, onHeight }: { top: number; width: number; onHeight:
   );
 }
 
-function PoemCard({ poem, fit = 1, animate = true, inView = false, delay = 0, style }: {
+function PoemCard({ poem, fit = 1, animate = true, inView = false, delay = 0, style, onOpen }: {
   poem: Poem;
   fit?: number;
   animate?: boolean;
   inView?: boolean;
   delay?: number;
   style?: React.CSSProperties;
+  onOpen?: (key: string, el: HTMLElement) => void;
 }) {
   const size = POEM_SIZE * fit;
   const shown = { opacity: 1, y: 0 };
   return (
     <motion.article
+      {...(onOpen && {
+        role: "button",
+        tabIndex: 0,
+        "aria-label": `Read ${poem.title}`,
+        onClick: (e: React.MouseEvent<HTMLElement>) => onOpen(poem.title, e.currentTarget),
+        onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(poem.title, e.currentTarget); }
+        },
+        whileHover: { scale: 1.02, y: -6, boxShadow: "0px 18px 40px rgba(0,0,0,0.12)", transition: { type: "spring", stiffness: 260, damping: 24 } },
+        whileTap: { scale: 0.99, transition: { duration: 0.1 } },
+        className: "cursor-zoom-in outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4",
+      })}
       style={{
         background: "#f3f3f3",
         borderRadius: RADIUS,
@@ -548,14 +535,28 @@ function fitFrame(item: Placed) {
 // ─────────────────────────────────────────────────────────────────────────────
 // LIGHTBOX — full photo over a blurred view of the page
 // ─────────────────────────────────────────────────────────────────────────────
-function Lightbox({ item, scale, onClose, onStep }: {
-  item: Placed | null;
+// Font scale for a poem shown in the viewer: as large as fits 80% of the viewport, up to 1.4× the screen scale
+function viewerPoemFit(poem: Poem, scale: number) {
+  const lines = poem.stanzas.flatMap(st => st.split("\n"));
+  const widest = Math.max(
+    textWidth(poem.title, `800 ${POEM_SIZE}px ${SERIF}`),
+    ...lines.map(l => textWidth(l, `500 ${POEM_SIZE}px ${SERIF}`)),
+  );
+  const tall = poemHeight(poem, 1) - 2 * POEM_PAD;
+  const byW = (window.innerWidth * 0.7 - 2 * POEM_PAD) / widest;
+  const byH = (window.innerHeight * 0.8 - 2 * POEM_PAD) / tall;
+  return Math.min(1.4 * scale, byW, byH);
+}
+
+function Lightbox({ entry, scale, onClose, onStep }: {
+  entry: ViewEntry | null;
   scale: number;
   onClose: () => void;
   onStep: (dir: 1 | -1) => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
-  const isOpen = item !== null;
+  const isOpen = entry !== null;
+  const item = entry?.kind === "image" ? entry.item : null;
 
   // Keyboard, scroll lock and focus while open
   useEffect(() => {
@@ -580,13 +581,13 @@ function Lightbox({ item, scale, onClose, onStep }: {
 
   return createPortal(
     <AnimatePresence>
-      {item && (
+      {entry && (
         <motion.div
           key="lightbox"
           className="fixed inset-0 z-50"
           role="dialog"
           aria-modal="true"
-          aria-label={item.title?.text ?? item.alt}
+          aria-label={item ? item.title?.text ?? item.alt : entry.kind === "poem" ? entry.poem.title : undefined}
           style={{ fontFamily: SANS }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -603,6 +604,23 @@ function Lightbox({ item, scale, onClose, onStep }: {
           {/* Photo + title */}
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center" style={{ gap: 16 * scale }}>
             <AnimatePresence mode="wait">
+              {entry.kind === "poem" ? (
+                <motion.div
+                  key={entry.key}
+                  className="pointer-events-auto"
+                  initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.35, ease: EASE_OUT }}
+                >
+                  <PoemCard
+                    poem={entry.poem}
+                    fit={viewerPoemFit(entry.poem, scale)}
+                    animate={false}
+                    style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.12)", background: "#f6f6f6" }}
+                  />
+                </motion.div>
+              ) : item && (
               <motion.figure
                 key={item.id}
                 className="m-0 flex flex-col items-center pointer-events-auto"
@@ -633,6 +651,7 @@ function Lightbox({ item, scale, onClose, onStep }: {
                   </figcaption>
                 )}
               </motion.figure>
+              )}
             </AnimatePresence>
           </div>
 
@@ -657,7 +676,7 @@ function Lightbox({ item, scale, onClose, onStep }: {
             <motion.button
               key={dir}
               onClick={() => onStep(dir)}
-              aria-label={dir < 0 ? "Previous photo" : "Next photo"}
+              aria-label={dir < 0 ? "Previous" : "Next"}
               className="absolute top-1/2 flex items-center justify-center rounded-full bg-white cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               style={{
                 [dir < 0 ? "left" : "right"]: edge,
