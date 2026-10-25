@@ -19,7 +19,8 @@ import artKrishna from "@/assets/art/art_krishna.avif";
 import art4725 from "@/assets/art/art_4725.avif";
 import art0179 from "@/assets/art/art_0179.avif";
 import art0409 from "@/assets/art/art_0409.avif";
-import { POEMS } from "./poems";
+import art_izumi from "@/assets/art/art_izumi.avif";
+import { POEMS, type Poem } from "./poems";
 import {
   CONTENT_TOP, EASE_OUT, GAP, LINK_CLASS, MONO, NAV_TOP, NAV_X, RADIUS, SANS, SERIF,
   TopNav, useStageScale, type SitePage,
@@ -85,6 +86,8 @@ const ITEMS: Record<string, Item> = {
   sketch: { id: "sketch", kind: "art", src: art0179, alt: "Pencil sketch of a girl resting her chin on her hand", w: 473, h: 520,
     // left edge sits just after the signature mark
     title: { text: "A sketch", color: "#56534c", x: 0.258, y: 0.933, align: "left" } },
+  izumi: { id: "izumi", kind: "art", src: art_izumi, alt: "Digital portrait of a dark-haired young man", w: 399, h: 399,
+    title: { text: "Izumi Miyamura", color: "#6f6970", x: 0.0326, y: 0.6992, align: "left" } },
   pines: { id: "pines", kind: "art", src: art0409, alt: "Ink drawing of a swordsman with flowing hair", w: 356, h: 659,
     title: { text: "wind blowing against a forest of pine trees", color: "#0f0c06", x: 0.503, y: 0.965 } },
 };
@@ -97,10 +100,105 @@ const PHOTO_COLUMNS: Column[] = [
 ];
 const ART_COLUMNS: Column[] = [
   { share: 472, rows: [["magnanimous"], ["moon"]] },
-  { share: 399, rows: [["serenity"]] },
+  { share: 399, rows: [["serenity"], ["izumi"]] },
   { share: 842, rows: [["traitor"], ["sketch", "pines"]] },
 ];
 const BOTTOM_MARGIN = 120;
+
+// "All": one masonry of everything, in the reading order of the Figma "All" frame.
+// Each entry drops into the shortest column, so columns stay even.
+const ALL_ORDER: ({ item: string } | { poem: string })[] = [
+  { item: "river" }, { item: "magnanimous" }, { poem: "cotton candy skies" }, { item: "path" },
+  { item: "sketch" }, { poem: "[...]" }, { item: "train" }, { item: "sunflowers" },
+  { item: "trees" }, { item: "serenity" }, { item: "izumi" }, { item: "painting" },
+  { poem: "I wish I may, I wish I might..." }, { item: "rotunda" }, { item: "relief" }, { item: "traitor" },
+  { item: "statue" }, { poem: "Some Proof" }, { item: "tower" }, { item: "pines" }, { item: "moon" },
+];
+const ALL_COLUMNS = 3;
+
+// Poem card metrics (design px)
+const POEM_PAD = 24;
+const POEM_SIZE = 20;
+const POEM_LINE = 1.3; // line height, as a multiple of font size
+const POEM_STANZA_GAP = 1.2; // em
+
+// Font scale so a poem's longest line fits its card without wrapping
+function poemFit(poem: Poem, cardW: number) {
+  const lines = poem.stanzas.flatMap(st => st.split("\n"));
+  const widest = Math.max(
+    textWidth(poem.title, `800 ${POEM_SIZE}px ${SERIF}`),
+    ...lines.map(l => textWidth(l, `500 ${POEM_SIZE}px ${SERIF}`)),
+  );
+  return Math.min(1, (cardW - 2 * POEM_PAD) / widest);
+}
+
+function poemHeight(poem: Poem, fit: number) {
+  const size = POEM_SIZE * fit;
+  const lines = poem.stanzas.reduce((t, st) => t + st.split("\n").length, 0);
+  return 2 * POEM_PAD + size * POEM_LINE * (1 + lines) + size * POEM_STANZA_GAP * poem.stanzas.length;
+}
+
+type PlacedPoem = { poem: Poem; x: number; y: number; width: number; height: number; fit: number };
+
+type AllEntry = (typeof ALL_ORDER)[number];
+
+function entryHeight(entry: AllEntry, colW: number) {
+  if ("item" in entry) { const it = ITEMS[entry.item]; return colW * (it.h / it.w); }
+  const poem = POEMS.find(p => p.title === entry.poem)!;
+  return poemHeight(poem, poemFit(poem, colW));
+}
+
+// Column bottoms when entries drop, in order, into the shortest column
+function columnBottoms(heights: number[]) {
+  const cols = Array(ALL_COLUMNS).fill(0);
+  for (const h of heights) { const c = cols.indexOf(Math.min(...cols)); cols[c] += h + GAP; }
+  return cols;
+}
+
+// Swap nearby entries while it evens out the column bottoms (keeps roughly the Figma order)
+function balancedOrder(colW: number) {
+  const order = [...ALL_ORDER];
+  const hs = order.map(e => entryHeight(e, colW));
+  const spread = () => { const b = columnBottoms(hs); return Math.max(...b) - Math.min(...b); };
+  let best = spread();
+  for (let improved = true; improved;) {
+    improved = false;
+    for (let i = 0; i < order.length; i++) {
+      for (let j = i + 1; j <= Math.min(order.length - 1, i + 3); j++) {
+        [order[i], order[j]] = [order[j], order[i]]; [hs[i], hs[j]] = [hs[j], hs[i]];
+        const sp = spread();
+        if (sp < best - 1) { best = sp; improved = true; }
+        else { [order[i], order[j]] = [order[j], order[i]]; [hs[i], hs[j]] = [hs[j], hs[i]]; }
+      }
+    }
+  }
+  return order;
+}
+
+function layoutAll(top: number, contentW: number) {
+  const colW = (contentW - GAP * (ALL_COLUMNS - 1)) / ALL_COLUMNS;
+  const heights = Array(ALL_COLUMNS).fill(top);
+  const placed: Placed[] = [];
+  const poems: PlacedPoem[] = [];
+  for (const entry of balancedOrder(colW)) {
+    const col = heights.indexOf(Math.min(...heights));
+    const x = NAV_X + col * (colW + GAP);
+    const y = heights[col];
+    let h: number;
+    if ("item" in entry) {
+      const it = ITEMS[entry.item];
+      h = colW * (it.h / it.w);
+      placed.push({ ...it, x, y, width: colW, height: h });
+    } else {
+      const poem = POEMS.find(p => p.title === entry.poem)!;
+      const fit = poemFit(poem, colW);
+      h = poemHeight(poem, fit);
+      poems.push({ poem, x, y, width: colW, height: h, fit });
+    }
+    heights[col] = y + h + GAP;
+  }
+  return { placed, poems, bottom: Math.max(...heights) - GAP };
+}
 
 type Placed = Item & { x: number; y: number; width: number; height: number };
 
@@ -153,26 +251,20 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
   const headerH = NAV_TOP * 2 + 24;
   const contentW = stageW - 2 * NAV_X;
 
-  // Sections stack in this order; "All" shows every one
-  const showPhotos = filter === "all" || filter === "photo";
-  const showArt = filter === "all" || filter === "art";
-  const showPoems = filter === "all" || filter === "poem";
+  useFontsReady(); // poem sizes are measured from the real font
 
-  const placed: Placed[] = [];
-  let top = CONTENT_TOP;
-  if (showPhotos) {
-    const r = layoutColumns(PHOTO_COLUMNS, top, contentW);
-    placed.push(...r.placed);
-    top = r.bottom + GAP;
+  let placed: Placed[] = [];
+  let allPoems: PlacedPoem[] = [];
+  let bottom = CONTENT_TOP;
+  if (filter === "all") {
+    const r = layoutAll(CONTENT_TOP, contentW);
+    placed = r.placed; allPoems = r.poems; bottom = r.bottom;
+  } else if (filter === "photo" || filter === "art") {
+    const r = layoutColumns(filter === "photo" ? PHOTO_COLUMNS : ART_COLUMNS, CONTENT_TOP, contentW);
+    placed = r.placed; bottom = r.bottom;
   }
-  if (showArt) {
-    const r = layoutColumns(ART_COLUMNS, top, contentW);
-    placed.push(...r.placed);
-    top = r.bottom + GAP;
-  }
-  const poemsTop = top;
   const [poemsH, setPoemsH] = useState(0);
-  const height = (showPoems ? poemsTop + poemsH : top - GAP) + BOTTOM_MARGIN;
+  const height = (filter === "poem" ? CONTENT_TOP + poemsH : bottom) + BOTTOM_MARGIN;
 
   // Viewer order follows the page: top to bottom, then left to right
   const sequence = [...placed].sort((a, b) => a.y - b.y || a.x - b.x);
@@ -207,7 +299,17 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
             <AnimatePresence>
               {placed.map((item, i) => <PhotoCard key={item.id} item={item} order={i} onOpen={open} />)}
             </AnimatePresence>
-            {showPoems && <Poems key={filter} top={poemsTop} width={contentW} onHeight={setPoemsH} />}
+            {filter === "poem" && <Poems top={CONTENT_TOP} width={contentW} onHeight={setPoemsH} />}
+            {allPoems.map((p, i) => (
+              <PoemCard
+                key={p.poem.title}
+                poem={p.poem}
+                fit={p.fit}
+                delay={Math.min(i, 6) * 0.06}
+                inView
+                style={{ position: "absolute", left: p.x, top: p.y, width: p.width, height: p.height }}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -243,30 +345,7 @@ function Poems({ top, width, onHeight }: { top: number; width: number; onHeight:
   }, [onHeight, fit]);
 
   const cards = (animate: boolean) => POEMS.map((poem, i) => (
-    <motion.article
-      key={poem.title}
-      style={{
-        flex: "1 0 auto",
-        background: "#f3f3f3",
-        borderRadius: RADIUS,
-        padding: 24,
-        fontFamily: SERIF,
-        fontSize: 20,
-        lineHeight: "normal",
-        color: "black",
-        whiteSpace: "pre",
-      }}
-      initial={animate ? { opacity: 0, y: 40 } : false}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.9, ease: EASE_OUT, delay: i * 0.08 }}
-    >
-      <h3 className="m-0 underline" style={{ fontSize: 20, fontWeight: 800, textUnderlinePosition: "from-font" }}>
-        {poem.title}
-      </h3>
-      {poem.stanzas.map((stanza, j) => (
-        <p key={j} className="m-0" style={{ marginTop: "1.2em", fontWeight: 500 }}>{stanza}</p>
-      ))}
-    </motion.article>
+    <PoemCard key={poem.title} poem={poem} animate={animate} delay={i * 0.08} style={{ flex: "1 0 auto" }} />
   ));
 
   return (
@@ -283,6 +362,46 @@ function Poems({ top, width, onHeight }: { top: number; width: number; onHeight:
         {cards(true)}
       </div>
     </>
+  );
+}
+
+function PoemCard({ poem, fit = 1, animate = true, inView = false, delay = 0, style }: {
+  poem: Poem;
+  fit?: number;
+  animate?: boolean;
+  inView?: boolean;
+  delay?: number;
+  style?: React.CSSProperties;
+}) {
+  const size = POEM_SIZE * fit;
+  const shown = { opacity: 1, y: 0 };
+  return (
+    <motion.article
+      style={{
+        background: "#f3f3f3",
+        borderRadius: RADIUS,
+        padding: POEM_PAD,
+        fontFamily: SERIF,
+        fontSize: size,
+        lineHeight: POEM_LINE,
+        color: "black",
+        whiteSpace: "pre",
+        boxSizing: "border-box",
+        ...style,
+      }}
+      initial={animate ? { opacity: 0, y: 40 } : false}
+      animate={inView ? undefined : shown}
+      whileInView={inView ? shown : undefined}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.9, ease: EASE_OUT, delay }}
+    >
+      <h3 className="m-0 underline" style={{ fontSize: size, fontWeight: 800, lineHeight: POEM_LINE, textUnderlinePosition: "from-font" }}>
+        {poem.title}
+      </h3>
+      {poem.stanzas.map((stanza, j) => (
+        <p key={j} className="m-0" style={{ marginTop: `${POEM_STANZA_GAP}em`, fontWeight: 500 }}>{stanza}</p>
+      ))}
+    </motion.article>
   );
 }
 
@@ -332,7 +451,16 @@ function PhotoCard({ item, order, onOpen }: {
 
   // A title too long for its card shrinks to stay on one line (keeps 6% clear of each edge)
   useFontsReady();
-  const titleFit = title ? Math.min(1, (item.width * 0.88) / textWidth(title.text, `500 18px ${SERIF}`)) : 1;
+  const naturalW = title ? textWidth(title.text, `500 18px ${SERIF}`) : 0;
+  const titleFit = title ? Math.min(1, (item.width * 0.88) / naturalW) : 1;
+  // ...and is nudged inward if its spot would push it past an edge (6% margin)
+  let titleLeft = 0;
+  if (title) {
+    const w = naturalW * titleFit;
+    const pad = item.width * 0.06;
+    const want = title.align === "left" ? title.x * item.width : title.x * item.width - w / 2;
+    titleLeft = Math.max(pad, Math.min(item.width - pad - w, want));
+  }
 
   return (
     <motion.figure
@@ -368,11 +496,10 @@ function PhotoCard({ item, order, onOpen }: {
       />
       {title && (
         <figcaption
-          className={`absolute whitespace-nowrap ${title.align === "left" ? "" : "text-center"}`}
+          className="absolute whitespace-nowrap"
           style={{
-            left: `${title.x * 100}%`,
+            left: titleLeft,
             top: `${title.y * 100}%`,
-            transform: title.align === "left" ? undefined : "translateX(-50%)",
             fontFamily: SERIF,
             fontWeight: 500,
             fontSize: 18 * titleFit,
