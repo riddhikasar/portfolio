@@ -22,29 +22,23 @@ import trodImg from "@/assets/home/trod.avif";
 import playgroundImg from "@/assets/home/playground.avif";
 import lineContact from "@/assets/home/line_contact.svg";
 import star from "@/assets/home/star.svg";
+import {
+  DESIGN_H, EASE_OUT, GAP, LINK_CLASS, NAV_X, SANS, TopNav, useStageScale, type SitePage,
+} from "../site/site";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Layout is authored on the 1920×1080 Figma frame and scaled to the viewport,
 // so every number below is a design pixel.
 // ─────────────────────────────────────────────────────────────────────────────
-const DESIGN_W = 1920;
-const DESIGN_H = 1080;
-const MIN_STAGE_W = 1600; // narrowest stage (in design px) before we scale down by width
 const PAD_X = 120;
-const GAP = 42; // Figma: 32
 const CARD_TOP = 242;
 const CARD_H = 667;
 const HEADING_TOP = 164;
 const SMALL_W = 539;
 const WIDE_W = 1395;
-const NAV_X = 64; // Figma: 120
-const NAV_END = NAV_X + 289; // right edge of the last nav item ("About")
 
-// Figma uses Proxima Nova, which isn't licensed for web use; Figtree is the closest free match
-const SANS = "'Figtree', system-ui, sans-serif";
-const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
-type NavTarget = "work" | "about" | "noonchi" | "relevo" | "trod";
+type NavTarget = SitePage | "noonchi" | "relevo" | "trod";
 
 // ── Light / dark palette (page chrome only — cards keep their own artwork) ──
 const LIGHT = { bg: "#ffffff", ink: "#000000", dotIdle: "#C4C4C4", trackDot: "rgba(0,0,0,0.28)", starFilter: "invert(0)" };
@@ -63,23 +57,6 @@ const SLIDES: Slide[] = SLIDE_WIDTHS.reduce<Slide[]>((acc, width, i) => {
 }, []);
 const TRACK_END = SLIDES[SLIDES.length - 1].left + SMALL_W + PAD_X;
 
-// ── Stage scaling ────────────────────────────────────────────────────────────
-function useStageScale() {
-  const compute = () => {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const scale = Math.min(h / DESIGN_H, w / MIN_STAGE_W);
-    return { scale, stageW: w / scale, viewportH: h };
-  };
-  const [state, setState] = useState(compute);
-  useEffect(() => {
-    const onResize = () => setState(compute());
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-  return state;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // HOME
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,14 +70,23 @@ export default function HomePage({ navigate, dark }: {
   const [active, setActive] = useState(0);
   const x = useMotionValue(0);
 
+  // Right edge of the nav (design px) — the first card rests aligned under it
+  const navRef = useRef<HTMLElement>(null);
+  const [navEnd, setNavEnd] = useState(NAV_X + 236);
+  useEffect(() => {
+    const measure = () => { if (navRef.current) setNavEnd(NAV_X + navRef.current.offsetWidth); };
+    measure();
+    document.fonts?.ready.then(measure);
+  }, []);
+
   // First card rests aligned under the end of the nav, the last mirrors it on the right,
   // and every card in between rests centred
   const offsetFor = useCallback((i: number) => {
     const sl = SLIDES[i];
-    if (i === 0) return -(sl.left - NAV_END);
-    if (i === SLIDES.length - 1) return -(sl.left + sl.width - (stageW - NAV_END));
+    if (i === 0) return -(sl.left - navEnd);
+    if (i === SLIDES.length - 1) return -(sl.left + sl.width - (stageW - navEnd));
     return -(sl.left + sl.width / 2 - stageW / 2);
-  }, [stageW]);
+  }, [stageW, navEnd]);
 
   // ── Smooth scroll engine ───────────────────────────────────────────────────
   // Input moves a target; the track eases toward it every frame, then the
@@ -257,7 +243,12 @@ export default function HomePage({ navigate, dark }: {
           transform: `scale(${scale})`,
         }}
       >
-        <TopNav navigate={navigate} onHome={() => go(0)} />
+        <TopNav
+          current="home"
+          navRef={navRef}
+          ink={palette.ink}
+          onSelect={page => (page === "home" ? go(0) : navigate(page))}
+        />
 
         {/* Sliding track */}
         <motion.div
@@ -354,6 +345,7 @@ export default function HomePage({ navigate, dark }: {
             fillTo={stops[4]}
             heading="And take photos of, write about, and draw things that catch my eye"
             showLine={false}
+            onOpen={() => navigate("play")}
             media={
               <img
                 src={playgroundImg}
@@ -374,57 +366,6 @@ export default function HomePage({ navigate, dark }: {
     </motion.div>
     </MotionConfig>
     </PaletteContext.Provider>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SHARED LINK HOVER — every link brightens and lifts slightly
-// ─────────────────────────────────────────────────────────────────────────────
-const LINK_CLASS =
-  "relative outline-none transition-[opacity,transform] duration-300 ease-out hover:opacity-100 hover:-translate-y-px " +
-  "focus-visible:opacity-100 focus-visible:-translate-y-px focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// NAV
-// ─────────────────────────────────────────────────────────────────────────────
-function TopNav({ navigate, onHome }: { navigate: (p: NavTarget) => void; onHome: () => void }) {
-  const { ink } = usePalette();
-  const items: { label: string; onClick?: () => void; current?: boolean }[] = [
-    { label: "Home", current: true, onClick: onHome },
-    { label: "Work", onClick: () => navigate("work") },
-    { label: "Playground" },
-    { label: "About", onClick: () => navigate("about") },
-  ];
-  return (
-    <motion.nav
-      className="absolute z-20 flex items-center"
-      style={{ left: NAV_X, top: 32, gap: 18 }}
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.1 }}
-    >
-      {items.map(item => (
-        <button
-          key={item.label}
-          onClick={item.onClick}
-          disabled={!item.onClick}
-          aria-current={item.current ? "page" : undefined}
-          className={`text-center whitespace-nowrap ${item.current ? "opacity-100" : "opacity-20"} ${
-            item.onClick ? `${LINK_CLASS} cursor-pointer` : "cursor-default"
-          }`}
-          style={{
-            fontSize: 20,
-            lineHeight: 1.1,
-            letterSpacing: -1,
-            fontWeight: item.current ? 600 : 400,
-            color: ink,
-            transition: "color 0.45s ease-in-out, opacity 0.3s ease-out",
-          }}
-        >
-          {item.label}
-        </button>
-      ))}
-    </motion.nav>
   );
 }
 
@@ -646,7 +587,7 @@ function ProjectSlide({
         role={onOpen ? "link" : undefined}
         tabIndex={onOpen ? 0 : undefined}
         onKeyDown={e => { if (onOpen && e.key === "Enter") onOpen(); }}
-        aria-label={title ? `Open ${title} case study` : undefined}
+        aria-label={title ? `Open ${title} case study` : onOpen ? heading : undefined}
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.15 + index * 0.08 }}
@@ -743,7 +684,7 @@ function JourneyLine({ fill, revealed }: { fill: MotionValue<number>; revealed: 
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGINATION DOTS
 // ─────────────────────────────────────────────────────────────────────────────
-const DOT_LABELS = ["Hello", "Noonchi", "Relevo", "TROD", "Playground", "Create Magic"];
+const DOT_LABELS = ["Hello", "Noonchi", "Relevo", "TROD", "Play", "Create Magic"];
 
 function Dots({ count, active, onSelect }: { count: number; active: number; onSelect: (i: number) => void }) {
   const { ink, dotIdle } = usePalette();

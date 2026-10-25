@@ -11,6 +11,7 @@ import RelevoRoboticsPage from "./RelevoRoboticsPage";
 import LinkPage from "./LinkPage";
 import EpicurePage from "./Epicure Page";
 import HomePage from "./home/HomePage";
+import PlayPage from "./play/PlayPage";
 
 // ── Project thumbnails ─────────────────────────────────────────────
 import thumbNoonchi from "@/assets/thumbnails/noonchi_thumbnail.png";
@@ -35,7 +36,7 @@ import forest from "@/assets/aboutMorph/mountain.png";
 import waves from "@/assets/aboutMorph/waves.png";
 
 // ─────────────────────────────────────────────────────────────────────────────
-type Page = "home" | "work" | "about" | "noonchi" | "liquid" | "relevo" | "water" | "trod" | "liquid-robotics" | "relevo-robotics" | "link" | "epicure";
+type Page = "home" | "play" | "work" | "about" | "noonchi" | "liquid" | "relevo" | "water" | "trod" | "liquid-robotics" | "relevo-robotics" | "link" | "epicure";
 type Tab = "all" | "digital" | "robotics";
 
 // ── URL ↔ page/tab helpers ────────────────────────────────────────────────────
@@ -43,7 +44,7 @@ const RAW_BASE_PATH = import.meta.env.BASE_URL ?? "/";
 const BASE_PATH = RAW_BASE_PATH === "/" ? "" : RAW_BASE_PATH.replace(/\/$/, "");
 
 const PAGE_TO_PATH: Record<Page, string> = {
-  home: "/", work: "/work", about: "/about",
+  home: "/", play: "/play", work: "/work", about: "/about",
   noonchi: "/noonchi", liquid: "/liquid", relevo: "/relevo",
   water: "/water", trod: "/trod",
   "liquid-robotics": "/liquid-robotics",
@@ -1027,8 +1028,8 @@ export default function App() {
       className="min-h-screen transition-colors duration-300"
       style={{ backgroundColor: bgColor, WebkitFontSmoothing: "antialiased", wordBreak: "break-word", overflowWrap: "anywhere", lineHeight: 1.35 }}
     >
-      {/* Header stays in normal document flow (the home page has its own nav) */}
-      {page !== "home" && <div
+      {/* Header stays in normal document flow (redesigned pages have their own nav) */}
+      {page !== "home" && page !== "play" && <div
         className="transition-colors duration-300"
         style={{ backgroundColor: dark ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.88)", backdropFilter: "blur(10px)" }}
       >
@@ -1046,6 +1047,10 @@ export default function App() {
         {page === "home" ? (
           <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
             <HomePage navigate={p => navigate(p)} dark={dark} />
+          </motion.div>
+        ) : page === "play" ? (
+          <motion.div key="play" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
+            <PlayPage navigate={p => navigate(p)} />
           </motion.div>
         ) : page === "work" ? (
           <motion.div key="work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
