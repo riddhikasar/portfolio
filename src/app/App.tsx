@@ -10,6 +10,7 @@ import LiquidRoboticsPage from "./LiquidRoboticsPage";
 import RelevoRoboticsPage from "./RelevoRoboticsPage";
 import LinkPage from "./LinkPage";
 import EpicurePage from "./Epicure Page";
+import HomePage from "./home/HomePage";
 
 // ── Project thumbnails ─────────────────────────────────────────────
 import thumbNoonchi from "@/assets/thumbnails/noonchi_thumbnail.png";
@@ -34,7 +35,7 @@ import forest from "@/assets/aboutMorph/mountain.png";
 import waves from "@/assets/aboutMorph/waves.png";
 
 // ─────────────────────────────────────────────────────────────────────────────
-type Page = "work" | "about" | "noonchi" | "liquid" | "relevo" | "water" | "trod" | "liquid-robotics" | "relevo-robotics" | "link" | "epicure";
+type Page = "home" | "work" | "about" | "noonchi" | "liquid" | "relevo" | "water" | "trod" | "liquid-robotics" | "relevo-robotics" | "link" | "epicure";
 type Tab = "all" | "digital" | "robotics";
 
 // ── URL ↔ page/tab helpers ────────────────────────────────────────────────────
@@ -42,7 +43,7 @@ const RAW_BASE_PATH = import.meta.env.BASE_URL ?? "/";
 const BASE_PATH = RAW_BASE_PATH === "/" ? "" : RAW_BASE_PATH.replace(/\/$/, "");
 
 const PAGE_TO_PATH: Record<Page, string> = {
-  work: "/", about: "/about",
+  home: "/", work: "/work", about: "/about",
   noonchi: "/noonchi", liquid: "/liquid", relevo: "/relevo",
   water: "/water", trod: "/trod",
   "liquid-robotics": "/liquid-robotics",
@@ -68,7 +69,7 @@ function pathToPage(pathname: string): Page {
   const normalizedPath = normalizeAppPath(pathname);
   const found = (Object.entries(PAGE_TO_PATH) as [Page, string][])
     .find(([, p]) => p === normalizedPath);
-  return found?.[0] ?? "work";
+  return found?.[0] ?? "home";
 }
 
 function buildPath(p: Page, t?: Tab) {
@@ -291,7 +292,7 @@ function Header({ dark, page, setPage, setTab, toggleDark }: {
   return (
     <header className="flex items-center justify-between px-[clamp(16px,2.9vw,42px)] py-[12px] gap-[clamp(8px,2vw,24px)] transition-colors duration-300">
       <motion.button
-        onClick={() => setPage("work")}
+        onClick={() => setPage("home")}
         className="font-['Source_Code_Pro'] font-medium uppercase leading-[1.45] cursor-pointer shrink-0 whitespace-nowrap"
         style={{ color: fg, fontSize: "clamp(13px,1.25vw,18px)", letterSpacing: "-0.09px" }}
         whileHover={{ opacity: 0.65 }}
@@ -1026,8 +1027,8 @@ export default function App() {
       className="min-h-screen transition-colors duration-300"
       style={{ backgroundColor: bgColor, WebkitFontSmoothing: "antialiased", wordBreak: "break-word", overflowWrap: "anywhere", lineHeight: 1.35 }}
     >
-      {/* Header stays in normal document flow */}
-      <div
+      {/* Header stays in normal document flow (the home page has its own nav) */}
+      {page !== "home" && <div
         className="transition-colors duration-300"
         style={{ backgroundColor: dark ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.88)", backdropFilter: "blur(10px)" }}
       >
@@ -1038,11 +1039,15 @@ export default function App() {
           setTab={setActiveTab}
           toggleDark={() => setDark(d => !d)}
         />
-      </div>
+      </div>}
 
       {/* Page content with fade transition */}
       <AnimatePresence mode="wait">
-        {page === "work" ? (
+        {page === "home" ? (
+          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
+            <HomePage navigate={p => navigate(p)} dark={dark} />
+          </motion.div>
+        ) : page === "work" ? (
           <motion.div key="work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
             <WorkPage dark={dark} activeTab={activeTab} setTab={setActiveTab} setPage={navigate} />
           </motion.div>
