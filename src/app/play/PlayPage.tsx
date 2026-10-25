@@ -22,7 +22,7 @@ import art0409 from "@/assets/art/art_0409.avif";
 import art_izumi from "@/assets/art/art_izumi.avif";
 import { POEMS, type Poem } from "./poems";
 import {
-  CONTENT_TOP, EASE_OUT, GAP, LINK_CLASS, MONO, NAV_TOP, NAV_X, RADIUS, SANS, SERIF,
+  CONTENT_TOP, EASE_OUT, GAP, LINK_CLASS, NAV_TOP, NAV_X, RADIUS, SANS, SERIF,
   TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -505,8 +505,9 @@ function Filters({ value, onChange }: { value: Filter; onChange: (f: Filter) => 
             key={f.id}
             onClick={() => onChange(f.id)}
             aria-pressed={on}
-            className={`whitespace-nowrap cursor-pointer ${LINK_CLASS}`}
-            style={{ fontFamily: MONO, fontSize: 20, lineHeight: 1.1, letterSpacing: -1, fontWeight: on ? 700 : 400, color: "black" }}
+            // Same style as the top menu: selected is semibold, the rest are faded
+            className={`whitespace-nowrap cursor-pointer ${on ? "opacity-100" : "opacity-20"} ${LINK_CLASS}`}
+            style={{ fontSize: 20, lineHeight: 1.1, letterSpacing: -1, fontWeight: on ? 600 : 400, color: "black", transition: "opacity 0.3s ease-out" }}
           >
             {f.label}
           </button>
@@ -593,11 +594,12 @@ function PhotoCard({ item, order, onOpen }: {
   );
 }
 
-// Text width in px for a CSS font shorthand (cached)
+// Text width in px for a CSS font shorthand (cached per font-load state)
 const textWidths = new Map<string, number>();
 let measureCtx: CanvasRenderingContext2D | null = null;
+let serifReady = false;
 function textWidth(text: string, font: string) {
-  const key = `${font}|${text}|${document.fonts?.status}`;
+  const key = `${font}|${text}|${serifReady}`;
   let w = textWidths.get(key);
   if (w === undefined) {
     measureCtx ??= document.createElement("canvas").getContext("2d");
@@ -609,10 +611,15 @@ function textWidth(text: string, font: string) {
   return w;
 }
 
-// Re-render once web fonts have loaded so text measurements use the real font
+// Load the serif weights the poems and titles use, then re-render so measurements use the real font.
+// (document.fonts.ready alone can resolve before a not-yet-used weight has downloaded.)
+const serifLoaded = Promise.all([
+  document.fonts?.load(`500 20px ${SERIF}`),
+  document.fonts?.load(`800 20px ${SERIF}`),
+]).then(() => { serifReady = true; });
 function useFontsReady() {
-  const [, setReady] = useState(document.fonts?.status === "loaded");
-  useEffect(() => { document.fonts?.ready.then(() => setReady(true)); }, []);
+  const [, setReady] = useState(serifReady);
+  useEffect(() => { serifLoaded.then(() => setReady(true)); }, []);
 }
 
 // Largest box with the card's aspect ratio that fits within 78% of the viewport
