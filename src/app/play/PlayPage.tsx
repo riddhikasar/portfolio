@@ -112,9 +112,9 @@ const POEM_KEYS: Record<string, string> = {
   cotton: "cotton candy skies", dots: "[...]", proof: "Some Proof", wish: "I wish I may, I wish I might...",
 };
 const ALL_LANES: { share: number; blocks: (string | string[])[] }[] = [
-  { share: 776, blocks: ["river", ["sketch", "pines"], "trees", ["dots", "proof"], "relief", "traitor", "painting"] },
-  { share: 490, blocks: ["magnanimous", "rotunda", "cotton", "tower", "wish", "moon"] },
-  { share: 442, blocks: ["sunflowers", "serenity", "path", "izumi", "statue", "train"] },
+  { share: 766, blocks: ["river", ["sketch", "dots"], "trees", "painting", "relief", "traitor", ["pines", "proof"]] },
+  { share: 460, blocks: ["magnanimous", "train", "sunflowers", "serenity", "izumi", "statue"] },
+  { share: 482, blocks: ["cotton", "path", "wish", "rotunda", "tower", "moon"] },
 ];
 const poemByTitle = (t: string) => POEMS.find(p => p.title === t)!;
 
@@ -156,15 +156,20 @@ function layoutLane(blocks: (string | string[])[], x: number, laneW: number, top
   let y = top;
   for (const block of blocks) {
     const ids = Array.isArray(block) ? block : [block];
-    // Items share the row in their Figma proportions (poems by the width they need)
-    const natural = ids.map(id => (POEM_KEYS[id] ? poemNaturalWidth(poemByTitle(POEM_KEYS[id])) : ITEMS[id].w));
-    const sum = natural.reduce((t, n) => t + n, 0);
+    // Poems get the width they need first (up to half the row); images share the rest in their Figma proportions
     const rowUsable = laneW - GAP * (ids.length - 1);
+    const poemW = ids.map(id => (POEM_KEYS[id] ? poemNaturalWidth(poemByTitle(POEM_KEYS[id])) : 0));
+    const hasImages = ids.some(id => !POEM_KEYS[id]);
+    const poemCap = hasImages ? rowUsable / 2 : rowUsable;
+    const poemTotal = poemW.reduce((t, w) => t + w, 0);
+    const poemScale = poemTotal > poemCap ? poemCap / poemTotal : hasImages ? 1 : rowUsable / poemTotal;
+    const imageSum = ids.reduce((t, id) => t + (POEM_KEYS[id] ? 0 : ITEMS[id].w), 0);
+    const imageSpace = rowUsable - poemTotal * poemScale;
     let ix = x;
     let rowH = 0;
     const rowPoems: PlacedPoem[] = [];
     ids.forEach((id, i) => {
-      const w = rowUsable * (natural[i] / sum);
+      const w = POEM_KEYS[id] ? poemW[i] * poemScale : imageSpace * (ITEMS[id].w / imageSum);
       if (POEM_KEYS[id]) {
         const poem = poemByTitle(POEM_KEYS[id]);
         const fit = poemFit(poem, w);
