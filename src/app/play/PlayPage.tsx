@@ -453,11 +453,11 @@ function PhotoCard({ item, order, onOpen }: {
   useFontsReady();
   const naturalW = title ? textWidth(title.text, `500 18px ${SERIF}`) : 0;
   const titleFit = title ? Math.min(1, (item.width * 0.88) / naturalW) : 1;
-  // ...and is nudged inward if its spot would push it past an edge (6% margin)
+  // ...and is nudged inward if its spot would push it past an edge (3% margin)
   let titleLeft = 0;
   if (title) {
     const w = naturalW * titleFit;
-    const pad = item.width * 0.06;
+    const pad = item.width * 0.03;
     const want = title.align === "left" ? title.x * item.width : title.x * item.width - w / 2;
     titleLeft = Math.max(pad, Math.min(item.width - pad - w, want));
   }
