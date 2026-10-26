@@ -11,7 +11,6 @@ import LinkPage from "./LinkPage";
 import EpicurePage from "./Epicure Page";
 import HomePage from "./home/HomePage";
 import PlayPage from "./play/PlayPage";
-import NoonchiCaseStudy from "./noonchi/NoonchiCaseStudy";
 import WorkPageV2 from "./work/WorkPage";
 import AboutPageV2 from "./about/AboutPage";
 import { pageHandoff } from "./site/site";
@@ -952,8 +951,10 @@ const ROBOTICS_ORDER: Page[] = ["trod", "relevo-robotics", "liquid-robotics", "e
 
 export default function App() {
   // Initialize state from the current URL so direct links/refresh work
-  const [page, setPageRaw] = useState<Page>(() => pathToPage(window.location.pathname));
+  // The old /noonchi case study now lives on Work › Digital Interfaces
+  const [page, setPageRaw] = useState<Page>(() => { const p = pathToPage(window.location.pathname); return p === "noonchi" ? "work" : p; });
   const [activeTab, setTabRaw] = useState<Tab>(() => {
+    if (pathToPage(window.location.pathname) === "noonchi") return "digital";
     const t = new URLSearchParams(window.location.search).get("tab") as Tab | null;
     return t === "robotics" ? "robotics" : "digital";
   });
@@ -976,10 +977,11 @@ export default function App() {
     function onPop(e: PopStateEvent) {
       const s = e.state as { page: Page; tab: Tab } | null;
       if (s) {
-        setPageRaw(s.page);
+        setPageRaw(s.page === "noonchi" ? "work" : s.page);
         setTabRaw(s.tab === "robotics" ? "robotics" : "digital");
       } else {
-        setPageRaw(pathToPage(window.location.pathname));
+        const pp = pathToPage(window.location.pathname);
+        setPageRaw(pp === "noonchi" ? "work" : pp);
         const t = new URLSearchParams(window.location.search).get("tab") as Tab | null;
         setTabRaw(t === "robotics" ? "robotics" : "digital");
       }
@@ -990,6 +992,7 @@ export default function App() {
 
   // navigate — pushes a new browser history entry and updates React state
   const navigate = useCallback((p: Page, t?: Tab) => {
+    if (p === "noonchi") { p = "work"; t = "digital"; } // Noonchi is on Work › Digital Interfaces
     // Work opens on Digital Interfaces unless a tab is asked for
     const tab = t ?? (p === "work" ? "digital" : activeTab);
     if (p === "work") t = tab;
@@ -1034,7 +1037,7 @@ export default function App() {
       style={{ backgroundColor: bgColor, WebkitFontSmoothing: "antialiased", wordBreak: "break-word", overflowWrap: "anywhere", lineHeight: 1.35 }}
     >
       {/* Header stays in normal document flow (redesigned pages have their own nav) */}
-      {page !== "home" && page !== "play" && page !== "work" && page !== "about" && page !== "noonchi" && <div
+      {page !== "home" && page !== "play" && page !== "work" && page !== "about" && <div
         className="transition-colors duration-300"
         style={{ backgroundColor: dark ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.88)", backdropFilter: "blur(10px)" }}
       >
@@ -1077,10 +1080,6 @@ export default function App() {
         ) : page === "work" ? (
           <motion.div key="work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
             <WorkPageV2 tab={activeTab === "robotics" ? "robotics" : "digital"} onTab={setActiveTab} navigate={p => navigate(p)} />
-          </motion.div>
-        ) : page === "noonchi" ? (
-          <motion.div key="noonchi" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <NoonchiCaseStudy navigate={p => navigate(p)} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
           </motion.div>
         ) : page === "liquid" ? (
           <motion.div key="liquid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>

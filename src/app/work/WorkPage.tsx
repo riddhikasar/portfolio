@@ -995,7 +995,7 @@ const ROBOTICS: Project[] = [
         <Callout title="Try Liquid Data live" href="https://liquid-data.lovable.app/">
           I also vibe-coded a website for this interaction for a virtual experience: liquid-data.lovable.app
         </Callout>
-        <Vimeo id="1210329599" title="Liquid Data website demo" aspect="100 / 54.46" />
+        <Vimeo id="1210329599" title="Liquid Data website demo" autoplay aspect="100 / 54.46" />
       </>
     ),
   },
