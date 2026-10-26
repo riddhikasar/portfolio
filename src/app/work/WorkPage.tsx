@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { AnimatePresence, motion, MotionConfig, useInView } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 
@@ -51,7 +51,7 @@ import relevoClipMp4 from "@/assets/relevo/demo_1.mp4";
 import relevoHero from "@/assets/home/relevo.avif";
 import trodCard from "@/assets/home/trod.avif";
 import {
-  CARD_HOVER, CONTENT_TOP, EASE_OUT, CAPTION_GREY, FADED_GREY, GAP, HOVER_SPRING, scrollToY, SiteFooter, SURFACE, TEXT_GREY, ToTop, useAtBottom, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS,
+  CARD_HOVER, CONTENT_TOP, EASE_OUT, CAPTION_GREY, FADED_GREY, GAP, HOVER_SPRING, scrollToY, SiteFooter, SURFACE, TEXT_GREY, ToTop, useAtBottom, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, menuRow, siteMetrics, SUBNAV_H,
   TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -85,6 +85,32 @@ const SUBMENU = { fontSize: 20, lineHeight: 1.1, letterSpacing: -1 } as const;
 const STAR_H = 39;
 const TITLE_H = TITLE.fontSize * TITLE.lineHeight;
 
+// Sizes every block reads: desktop (design px, stage scaled) or compact (phones/tablets, real px)
+const DESKTOP = {
+  compact: false,
+  title: TITLE, body: BODY, heading: HEADING, small: SMALL,
+  caption: { fontSize: 20, lineHeight: "normal", letterSpacing: -0.2, fontWeight: 500 },
+  star: 38, starGap: 18, headingToCard: HEADING_TO_CARD, cardGap: CARD_GAP, textPad: TEXT_PAD,
+  captionSpace: CAPTION_SPACE, groupSpace: 56, sectionGap: SECTION_GAP, headingTop: GAP * 2, headingBottom: 24,
+  radius: RADIUS, gridGap: 16, callout: { pad: "40px 48px", gap: 32, star: 30, arrow: 24 },
+  next: { h: 667, x: 72, bottom: 64, title: 32, desc: 20, star: 30, strip: 185 },
+};
+type Metrics = typeof DESKTOP;
+const COMPACT: Metrics = {
+  compact: true,
+  title: { fontSize: 28, lineHeight: 1.1, letterSpacing: -1.2, fontWeight: 500 },
+  body: { fontSize: 17, lineHeight: 1.45, letterSpacing: -0.1, color: TEXT_GREY },
+  heading: { fontSize: 22, lineHeight: 1.15, letterSpacing: -0.8, fontWeight: 500 },
+  small: { fontSize: 15, lineHeight: 1.4, letterSpacing: -0.1, color: TEXT_GREY },
+  caption: { fontSize: 14, lineHeight: 1.4, letterSpacing: -0.1, fontWeight: 500 },
+  star: 24, starGap: 12, headingToCard: 18, cardGap: 20, textPad: 6,
+  captionSpace: 12, groupSpace: 16, sectionGap: 112, headingTop: 36, headingBottom: 14,
+  radius: 14, gridGap: 8, callout: { pad: "20px 18px", gap: 14, star: 20, arrow: 18 },
+  next: { h: 300, x: 20, bottom: 20, title: 22, desc: 15, star: 20, strip: 110 },
+} as unknown as Metrics;
+const MetricsCtx = createContext<Metrics>(DESKTOP);
+const useM = () => useContext(MetricsCtx);
+
 // Entrance shared by every block: rise into place as it scrolls in (same curve as Home's cards)
 const REVEAL = {
   initial: { opacity: 0, y: 56 },
@@ -104,8 +130,9 @@ const TEXT_REVEAL = {
 // Building blocks
 // ─────────────────────────────────────────────────────────────────────────────
 function Body({ children }: { children: ReactNode }) {
+  const m = useM();
   return (
-    <motion.div {...TEXT_REVEAL} className="flex flex-col" style={{ ...BODY, gap: "1em", paddingBlock: TEXT_PAD }}>
+    <motion.div {...TEXT_REVEAL} className="flex flex-col" style={{ ...m.body, gap: "1em", paddingBlock: m.textPad }}>
       {children}
     </motion.div>
   );
@@ -126,12 +153,13 @@ function Media({ w = 1399, h, src, alt, bg = MEDIA_BG, img, delay = 0, children 
   img?: CSSProperties;
   children?: ReactNode;
 }) {
+  const m = useM();
   return (
     <motion.div
       {...REVEAL}
       transition={{ ...REVEAL.transition, delay }}
       className="relative w-full overflow-hidden"
-      style={{ aspectRatio: `${w} / ${h}`, borderRadius: RADIUS, background: bg }}
+      style={{ aspectRatio: `${w} / ${h}`, borderRadius: m.radius, background: bg }}
     >
       {src && (
         <img
@@ -152,6 +180,7 @@ function Media({ w = 1399, h, src, alt, bg = MEDIA_BG, img, delay = 0, children 
 // A diagram on a white background, set on the same grey card as the photos: multiply blends its
 // white into the card, and it sits inside a margin so lines never touch the edge
 function Diagram({ h, src, alt }: { h: number; src: string; alt: string }) {
+  const inset = useM().compact ? 10 : 32;
   return (
     <Media h={h}>
       <img
@@ -161,7 +190,7 @@ function Diagram({ h, src, alt }: { h: number; src: string; alt: string }) {
         decoding="async"
         draggable={false}
         className="absolute pointer-events-none select-none"
-        style={{ inset: 32, width: "calc(100% - 64px)", height: "calc(100% - 64px)", objectFit: "contain", mixBlendMode: "multiply" }}
+        style={{ inset, width: `calc(100% - ${2 * inset}px)`, height: `calc(100% - ${2 * inset}px)`, objectFit: "contain", mixBlendMode: "multiply" }}
       />
     </Media>
   );
@@ -172,11 +201,14 @@ function Diagram({ h, src, alt }: { h: number; src: string; alt: string }) {
 type GridImage = { src: string; alt: string; w: number; h: number; img?: CSSProperties; video?: boolean };
 const GRID_GAP = 16;
 function Grid({ rows }: { rows: GridImage[][] }) {
+  const m = useM();
   let n = 0;
+  // On phones a row of more than two images wraps into pairs
+  const shown = m.compact ? rows.flatMap(row => row.length > 2 ? Array.from({ length: Math.ceil(row.length / 2) }, (_, i) => row.slice(i * 2, i * 2 + 2)) : [row]) : rows;
   return (
-    <div className="flex flex-col" style={{ gap: GRID_GAP }}>
-      {rows.map((row, r) => (
-        <div key={r} className="flex" style={{ gap: GRID_GAP }}>
+    <div className="flex flex-col" style={{ gap: m.gridGap }}>
+      {shown.map((row, r) => (
+        <div key={r} className="flex" style={{ gap: m.gridGap }}>
           {row.map(im => (
             <div key={im.src} style={{ flex: `${im.w / im.h} 1 0`, minWidth: 0 }}>
               {im.video
@@ -192,20 +224,34 @@ function Grid({ rows }: { rows: GridImage[][] }) {
 
 // One large image beside two stacked ones, all the same total height (Figma's screen mosaics)
 function Mosaic({ main, side }: { main: GridImage; side: [GridImage, GridImage] }) {
+  const m = useM();
   const sideAspect = side[0].w / side[0].h;
+  if (m.compact) {
+    // Phones: the main image full width, the two others side by side below it
+    return (
+      <div className="flex flex-col" style={{ gap: m.gridGap }}>
+        <Media w={main.w} h={main.h} src={main.src} alt={main.alt} />
+        <div className="flex" style={{ gap: m.gridGap }}>
+          {side.map((im, i) => (
+            <div key={im.src} className="flex-1 min-w-0"><Media w={im.w} h={im.h} src={im.src} alt={im.alt} delay={0.08 * (i + 1)} /></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
-    <div className="flex" style={{ gap: GRID_GAP }}>
+    <div className="flex" style={{ gap: m.gridGap }}>
       <div style={{ flex: `${main.w / main.h} 1 0`, minWidth: 0 }}>
         <Media w={main.w} h={main.h} src={main.src} alt={main.alt} />
       </div>
-      <div className="flex flex-col" style={{ flex: `${sideAspect / 2} 1 0`, minWidth: 0, gap: GRID_GAP }}>
+      <div className="flex flex-col" style={{ flex: `${sideAspect / 2} 1 0`, minWidth: 0, gap: m.gridGap }}>
         {side.map((im, i) => (
           <motion.div
             key={im.src}
             {...REVEAL}
             transition={{ ...REVEAL.transition, delay: 0.08 * (i + 1) }}
             className="relative flex-1 overflow-hidden"
-            style={{ borderRadius: RADIUS, background: MEDIA_BG }}
+            style={{ borderRadius: m.radius, background: MEDIA_BG }}
           >
             <img src={im.src} alt={im.alt} loading="lazy" decoding="async" draggable={false} className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" />
           </motion.div>
@@ -241,9 +287,10 @@ function Clip({ w, h, src, title, fit = "cover", bare }: { w: number; h: number;
       style={{ objectFit: fit }}
     />
   );
+  const radius = useM().radius;
   if (bare) return video;
   return (
-    <motion.div {...REVEAL} className="relative w-full overflow-hidden bg-black" style={{ aspectRatio: `${w} / ${h}`, borderRadius: RADIUS }}>
+    <motion.div {...REVEAL} className="relative w-full overflow-hidden bg-black" style={{ aspectRatio: `${w} / ${h}`, borderRadius: radius }}>
       {video}
     </motion.div>
   );
@@ -254,8 +301,10 @@ function Heading({ id, children }: { id: string; children: string }) {
   const ref = useRef<HTMLHeadingElement>(null);
   const inView = useInView(ref, { once: true, margin: "0px 0px -10% 0px" });
   const words = children.split(" ");
+  const m = useM();
   return (
-    <h3 ref={ref} id={id} style={{ ...HEADING, marginTop: GAP * 2, marginBottom: 24 - CARD_GAP - TEXT_PAD }}>
+    // scroll-margin keeps the heading clear of the compact header when jumped to
+    <h3 ref={ref} id={id} style={{ ...m.heading, marginTop: m.headingTop, marginBottom: m.headingBottom - m.cardGap - m.textPad }}>
       {words.map((w, i) => (
         <span key={i} className="inline-block overflow-hidden align-bottom" style={{ padding: "0 0.12em 4px", margin: "0 -0.12em -4px" }}>
           <motion.span
@@ -276,13 +325,15 @@ function Heading({ id, children }: { id: string; children: string }) {
 // tight inside, with extra room before the next item so each reads as its own card
 const GROUP_SPACE = 56; // added to CARD_GAP between items
 function Group({ children }: { children: ReactNode }) {
-  return <div className="flex flex-col" style={{ gap: CARD_GAP, marginTop: GROUP_SPACE }}>{children}</div>;
+  const m = useM();
+  return <div className="flex flex-col" style={{ gap: m.cardGap, marginTop: m.groupSpace }}>{children}</div>;
 }
 
 // Smaller heading for a part within a section (The Brace, The Cushion, ...)
 function Sub({ children }: { children: ReactNode }) {
+  const m = useM();
   return (
-    <motion.p {...TEXT_REVEAL} style={{ ...BODY, color: "#000", fontWeight: 600, marginBottom: CAPTION_SPACE - CARD_GAP }}>
+    <motion.p {...TEXT_REVEAL} style={{ ...m.body, color: "#000", fontWeight: 600, marginBottom: m.captionSpace - m.cardGap }}>
       {children}
     </motion.p>
   );
@@ -291,12 +342,13 @@ function Sub({ children }: { children: ReactNode }) {
 // Caption under an image or video: centred, smaller and lighter than body text, set close to what it
 // describes. Bold words stay in the caption grey.
 function Caption({ children }: { children: ReactNode }) {
+  const m = useM();
   return (
     <motion.p
       {...TEXT_REVEAL}
       transition={{ ...TEXT_REVEAL.transition, delay: 0.15 }}
       className="text-center [&_b]:![color:inherit]"
-      style={{ fontSize: 20, lineHeight: "normal", letterSpacing: -0.2, fontWeight: 500, color: CAPTION_GREY, marginTop: CAPTION_SPACE - CARD_GAP }}
+      style={{ ...m.caption, color: CAPTION_GREY, marginTop: m.captionSpace - m.cardGap }}
     >
       {children}
     </motion.p>
@@ -317,6 +369,7 @@ function Crop({ src, alt = "", box, img }: { src: string; alt?: string; box: CSS
 function Callout({ title, children, href }: { title: ReactNode; children?: ReactNode; href?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "0px 0px -12% 0px" });
+  const m = useM();
   // the block grows in, the star spins into place, then the headline and the line follow
   const rise = (delay: number) => ({
     initial: { opacity: 0, y: 10 },
@@ -328,8 +381,8 @@ function Callout({ title, children, href }: { title: ReactNode; children?: React
       <motion.img
         src={star}
         alt=""
-        width={30}
-        height={31}
+        width={m.callout.star}
+        height={m.callout.star * 31 / 30}
         draggable={false}
         className="shrink-0"
         initial={{ opacity: 0, scale: 0, rotate: -180 }}
@@ -337,19 +390,19 @@ function Callout({ title, children, href }: { title: ReactNode; children?: React
         transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.25 }}
       />
       <div className="flex flex-col" style={{ gap: 6 }}>
-        <motion.p className="flex items-center" style={{ ...BODY, color: "#000", fontWeight: 600, gap: 8 }} {...rise(0.35)}>
+        <motion.p className="flex items-center" style={{ ...m.body, color: "#000", fontWeight: 600, gap: 8 }} {...rise(0.35)}>
           {title}
           {href && (
             <motion.span className="flex" variants={{ hover: { x: 3, y: -3 } }} transition={HOVER_SPRING} aria-hidden>
-              <ArrowUpRight size={24} strokeWidth={2} />
+              <ArrowUpRight size={m.callout.arrow} strokeWidth={2} className="shrink-0" />
             </motion.span>
           )}
         </motion.p>
-        {children && <motion.p style={BODY} {...rise(0.45)}>{children}</motion.p>}
+        {children && <motion.p style={m.body} {...rise(0.45)}>{children}</motion.p>}
       </div>
     </>
   );
-  const box = { borderRadius: RADIUS, background: MEDIA_BG, padding: "40px 48px", gap: 32 };
+  const box = { borderRadius: m.radius, background: MEDIA_BG, padding: m.callout.pad, gap: m.callout.gap };
   return (
     <motion.div
       ref={ref}
@@ -391,8 +444,9 @@ function Vimeo({ id, title, aspect, autoplay }: { id: string; title: string; asp
     else if (started) frame.current?.contentWindow?.postMessage(JSON.stringify({ method: inView ? "play" : "pause" }), "*");
   }, [autoplay, inView, started]);
   const params = autoplay ? (started ? "&autoplay=1&muted=1&loop=1" : "") : "";
+  const radius = useM().radius;
   return (
-    <motion.div ref={ref} {...REVEAL} className="relative w-full overflow-hidden bg-black" style={{ aspectRatio: aspect, borderRadius: RADIUS }}>
+    <motion.div ref={ref} {...REVEAL} className="relative w-full overflow-hidden bg-black" style={{ aspectRatio: aspect, borderRadius: radius }}>
       <iframe
         ref={frame}
         key={params}
@@ -433,6 +487,82 @@ const RELEVO_PARTS = [
   { title: "02. The Cushion", text: "Macro-motion + Sensors", style: { left: "3.22%", top: "calc(50% + 66px)" } },
   { title: "03. The Dashboard", text: "Measurement + Tracking", style: { left: "78.67%", top: "calc(50% - 1px)" } },
 ];
+
+// Noonchi's three layers on one card; on phones they stack as rows (icon beside the text)
+function NoonchiLayers() {
+  const m = useM();
+  if (m.compact) {
+    return (
+      <motion.div {...REVEAL} className="flex flex-col" style={{ borderRadius: m.radius, background: MEDIA_BG, padding: "22px 18px", gap: 20 }}>
+        {NOONCHI_LAYERS.map(l => (
+          <div key={l.title} className="flex items-start" style={{ gap: 14 }}>
+            <div className="flex items-center justify-center rounded-full shrink-0" style={{ width: 52, height: 52, background: l.bg ?? "transparent", border: l.bg ? undefined : "1.5px solid #000" }}>
+              <img src={l.icon} alt="" width={28} height={28} />
+            </div>
+            <div className="flex flex-col" style={{ gap: 2 }}>
+              <p style={{ ...m.body, color: "#000", fontWeight: 600 }}>{l.title}</p>
+              <p style={m.small}>{l.text}</p>
+            </div>
+          </div>
+        ))}
+      </motion.div>
+    );
+  }
+  return (
+    <Media h={436}>
+      <div className="absolute inset-0 flex items-start justify-center" style={{ paddingTop: 64, gap: 52 }}>
+        {NOONCHI_LAYERS.map(l => (
+          <div key={l.title} className="flex flex-col items-center text-center" style={{ width: 296, gap: 18 }}>
+            <div
+              className="flex items-center justify-center rounded-full"
+              style={{ width: 110, height: 110, background: l.bg ?? "transparent", border: l.bg ? undefined : "2px solid #000" }}
+            >
+              <img src={l.icon} alt="" width={62} height={62} />
+            </div>
+            <p style={{ ...m.body, color: "#000", fontWeight: 600 }}>{l.title}</p>
+            <p style={m.small}>{l.text}</p>
+          </div>
+        ))}
+      </div>
+    </Media>
+  );
+}
+
+// Relevo's diagram with its three labels around it; on phones the labels sit in a row under it
+function RelevoParts() {
+  const m = useM();
+  const diagram = (
+    <Crop src={relevoComponents} alt="Diagram of the brace and cushion on a leg, and the dashboard"
+      box={m.compact ? { inset: 0 } : { left: "19.16%", right: "23.95%", top: 0, bottom: 0 }}
+      img={{ left: "0.06%", top: "-28.41%", width: "99.96%", height: "142.41%" }} />
+  );
+  if (m.compact) {
+    return (
+      <motion.div {...REVEAL} className="flex flex-col" style={{ borderRadius: m.radius, background: MEDIA_BG, padding: "16px 16px 20px", gap: 14 }}>
+        <div className="relative w-full" style={{ aspectRatio: "796 / 357" }}>{diagram}</div>
+        <div className="grid grid-cols-3" style={{ gap: 10 }}>
+          {RELEVO_PARTS.map(part => (
+            <div key={part.title} className="flex flex-col" style={{ gap: 2 }}>
+              <p style={{ ...m.small, color: "#000", fontWeight: 600 }}>{part.title}</p>
+              <p style={{ ...m.small, fontSize: 13 }}>{part.text}</p>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    );
+  }
+  return (
+    <Media h={357}>
+      {diagram}
+      {RELEVO_PARTS.map(part => (
+        <div key={part.title} className="absolute flex flex-col" style={{ ...part.style, transform: "translateY(-50%)", gap: 4 }}>
+          <p style={{ ...m.body, color: "#000", fontWeight: 600 }}>{part.title}</p>
+          <p style={m.small}>{part.text}</p>
+        </div>
+      ))}
+    </Media>
+  );
+}
 
 // Digital Interfaces
 const DIGITAL: Project[] = [
@@ -479,7 +609,7 @@ const DIGITAL: Project[] = [
           <B>“What if communication support did not sit on one person, but lived in the shared space between people?”</B>
         </Callout>
         <Media h={672}>
-          <div className="absolute overflow-hidden" style={{ left: "7.29%", right: "7.29%", top: "8.93%", aspectRatio: "1512 / 1216", borderRadius: RADIUS, boxShadow: "0px 6px 24px 0px rgba(0,0,0,0.15)" }}>
+          <div className="absolute overflow-hidden" style={{ left: "7.29%", right: "7.29%", top: "8.93%", aspectRatio: "1512 / 1216", borderRadius: "1.3% / 1.6%", boxShadow: "0px 6px 24px 0px rgba(0,0,0,0.15)" }}>
             <img src={noonchiReflections} alt="Noonchi reflections screen" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" />
           </div>
           <img src={noonchiWatchSide} alt="Noonchi nudge on a smart watch" loading="lazy" decoding="async" className="absolute pointer-events-none select-none" style={{ left: "79.56%", top: "25.3%", width: "17.51%", height: "57.89%", objectFit: "contain" }} />
@@ -494,22 +624,7 @@ const DIGITAL: Project[] = [
           </p>
         </Body>
         <Group>
-          <Media h={436}>
-            <div className="absolute inset-0 flex items-start justify-center" style={{ paddingTop: 64, gap: 52 }}>
-              {NOONCHI_LAYERS.map(l => (
-                <div key={l.title} className="flex flex-col items-center text-center" style={{ width: 296, gap: 18 }}>
-                  <div
-                    className="flex items-center justify-center rounded-full"
-                    style={{ width: 110, height: 110, background: l.bg ?? "transparent", border: l.bg ? undefined : "2px solid #000" }}
-                  >
-                    <img src={l.icon} alt="" width={62} height={62} />
-                  </div>
-                  <p style={{ ...BODY, color: "#000", fontWeight: 600 }}>{l.title}</p>
-                  <p style={SMALL}>{l.text}</p>
-                </div>
-              ))}
-            </div>
-          </Media>
+          <NoonchiLayers />
         </Group>
         <Group>
           <Vimeo id="1210330585" title="Noonchi app demo" autoplay aspect="382 / 240" />
@@ -628,17 +743,7 @@ const DIGITAL: Project[] = [
           </p>
         </Body>
         <Group>
-          <Media h={357}>
-            <Crop src={relevoComponents} alt="Diagram of the brace and cushion on a leg, and the dashboard"
-              box={{ left: "19.16%", right: "23.95%", top: 0, bottom: 0 }}
-              img={{ left: "0.06%", top: "-28.41%", width: "99.96%", height: "142.41%" }} />
-            {RELEVO_PARTS.map(part => (
-              <div key={part.title} className="absolute flex flex-col" style={{ ...part.style, transform: "translateY(-50%)", gap: 4 }}>
-                <p style={{ ...BODY, color: "#000", fontWeight: 600 }}>{part.title}</p>
-                <p style={SMALL}>{part.text}</p>
-              </div>
-            ))}
-          </Media>
+          <RelevoParts />
         </Group>
         <Callout title="A novel triangle form that lifts up to 50 lbs">
           By combining mechanism and form design, I invented this novel triangle form that allowed for a compact portable
@@ -904,9 +1009,14 @@ export default function WorkPage({ tab, onTab, navigate }: {
   onTab: (tab: WorkTab) => void;
   navigate: (p: SitePage | "noonchi") => void;
 }) {
-  const { scale, stageW } = useStageScale();
-  const headerH = NAV_TOP * 2 + MENU_SIZE * 1.1;
-  const columnW = Math.min(stageW - PAD_X - COLUMN_X, CARD_W);
+  const { scale, stageW, compact } = useStageScale();
+  const sm = siteMetrics(compact);
+  const m = compact ? COMPACT : DESKTOP;
+  // Compact: the Digital/Robotics switch gets its own row under the menu, and there's no side index
+  const headerH = compact ? sm.navTop + sm.menu * 1.1 + SUBNAV_H + 12 : NAV_TOP * 2 + MENU_SIZE * 1.1;
+  const contentTop = compact ? sm.contentTop + SUBNAV_H : CONTENT_TOP;
+  const columnX = compact ? sm.navX : COLUMN_X;
+  const columnW = compact ? stageW - 2 * sm.navX : Math.min(stageW - PAD_X - COLUMN_X, CARD_W);
   const projects = tab === "robotics" ? ROBOTICS : DIGITAL;
 
   // The stage is scaled with a transform, so its height is measured and set on the outer box
@@ -952,7 +1062,7 @@ export default function WorkPage({ tab, onTab, navigate }: {
   const scrollTo = (id: string, subId?: string) => {
     const el = subId ? anchor(id, subId) : sectionRefs.current[id];
     if (!el) return;
-    scrollToY(el.getBoundingClientRect().top + window.scrollY - CONTENT_TOP * scale);
+    scrollToY(el.getBoundingClientRect().top + window.scrollY - contentTop * scale);
   };
 
   // Arriving with #section in the URL (Home's Relevo card) scrolls to that project once laid out
@@ -972,6 +1082,7 @@ export default function WorkPage({ tab, onTab, navigate }: {
 
   return (
     <MotionConfig reducedMotion="user">
+      <MetricsCtx.Provider value={m}>
       <div className="relative bg-white" style={{ fontFamily: SANS, minHeight: "100vh", color: "#000" }}>
         {/* Fixed header: menu + tab switch, fading out over the content as it scrolls under */}
         <div
@@ -979,13 +1090,13 @@ export default function WorkPage({ tab, onTab, navigate }: {
           style={{ height: headerH * scale, background: "linear-gradient(#ffffff 65%, rgba(255,255,255,0))" }}
         >
           <div className="absolute top-0 left-0 origin-top-left pointer-events-auto" style={{ width: stageW, transform: `scale(${scale})` }}>
-            <TopNav current="work" onSelect={page => page !== "work" && navigate(page)} />
-            <TabSwitch value={tab} onChange={switchTab} />
+            <TopNav current="work" compact={compact} onSelect={page => page !== "work" && navigate(page)} />
+            <TabSwitch value={tab} onChange={switchTab} compact={compact} />
           </div>
         </div>
 
         {/* Fixed project index and back-to-top */}
-        <div className="fixed top-0 left-0 z-20 origin-top-left pointer-events-none" style={{ width: stageW, transform: `scale(${scale})` }}>
+        {!compact && <div className="fixed top-0 left-0 z-20 origin-top-left pointer-events-none" style={{ width: stageW, transform: `scale(${scale})` }}>
           <ProjectIndex
             projects={projects}
             active={active}
@@ -993,16 +1104,16 @@ export default function WorkPage({ tab, onTab, navigate }: {
             openSubs={active && (projects.findIndex(p => p.id === active) > 0 || activeSub) ? active : undefined}
             onSelect={scrollTo}
           />
-        </div>
-        <ToTop show={scrolled} scale={scale} />
-        <SiteFooter show={atBottom} scale={scale} />
+        </div>}
+        <ToTop show={scrolled} scale={scale} compact={compact} />
+        <SiteFooter show={atBottom} scale={scale} compact={compact} />
 
         {/* Projects */}
         <div className="relative overflow-hidden" style={{ height: height * scale }}>
           <div
             ref={stageRef}
             className="absolute top-0 left-0 origin-top-left"
-            style={{ width: stageW, transform: `scale(${scale})`, paddingTop: CONTENT_TOP, paddingBottom: BOTTOM_MARGIN }}
+            style={{ width: stageW, transform: `scale(${scale})`, paddingTop: contentTop, paddingBottom: compact ? 96 : BOTTOM_MARGIN }}
           >
             <AnimatePresence mode="wait">
               <motion.div
@@ -1012,17 +1123,18 @@ export default function WorkPage({ tab, onTab, navigate }: {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.35, ease: EASE_OUT }}
                 className="flex flex-col"
-                style={{ marginLeft: COLUMN_X, width: columnW, gap: SECTION_GAP }}
+                style={{ marginLeft: columnX, width: columnW, gap: m.sectionGap }}
               >
                 {projects.map(p => (
                   <section key={p.id} ref={el => { sectionRefs.current[p.id] = el; }} aria-labelledby={`work-${p.id}`}>
-                    <div className="flex items-end justify-between" style={{ gap: GAP }}>
+                    {/* Phones: the team line goes under the title */}
+                    <div className={compact ? "flex flex-col" : "flex items-end justify-between"} style={{ gap: compact ? 6 : GAP }}>
                       <ProjectTitle id={`work-${p.id}`} text={p.title} active={p.id === active} />
                       {p.team && (
-                        <motion.p {...TEXT_REVEAL} className="text-right" style={{ ...BODY, paddingBottom: 6 }}>{p.team}</motion.p>
+                        <motion.p {...TEXT_REVEAL} className={compact ? "" : "text-right"} style={{ ...(compact ? m.small : BODY), paddingBottom: compact ? 0 : 6, paddingLeft: compact ? m.star + m.starGap : 0 }}>{p.team}</motion.p>
                       )}
                     </div>
-                    <div className="flex flex-col" style={{ gap: CARD_GAP, marginTop: HEADING_TO_CARD }}>{p.content}</div>
+                    <div className="flex flex-col" style={{ gap: m.cardGap, marginTop: m.headingToCard }}>{p.content}</div>
                   </section>
                 ))}
                 <NextCard {...NEXT[tab]} onOpen={() => switchTab(tab === "digital" ? "robotics" : "digital")} />
@@ -1031,6 +1143,7 @@ export default function WorkPage({ tab, onTab, navigate }: {
           </div>
         </div>
       </div>
+      </MetricsCtx.Provider>
     </MotionConfig>
   );
 }
@@ -1058,13 +1171,15 @@ const NEXT: Record<WorkTab, { label: string; title: string; description: string;
 
 function NextCard({ label, title, description, image, alt, tone, onOpen }: (typeof NEXT)[WorkTab] & { onOpen: () => void }) {
   const [hover, setHover] = useState(false);
+  const m = useM();
+  const n = m.next;
   const fg = tone === "dark" ? "#ffffff" : "#000000";
   return (
-    <motion.div {...REVEAL} className="flex flex-col" style={{ gap: HEADING_TO_CARD, marginTop: -SECTION_GAP / 2 }}>
+    <motion.div {...REVEAL} className="flex flex-col" style={{ gap: m.headingToCard, marginTop: -m.sectionGap / 2 }}>
       {/* Hairline dividing the projects from what's next: half the project gap above and below it,
           drawn like the line above the contact links on Home's hello card */}
-      <div aria-hidden style={{ height: 0.5, background: FADED_GREY, marginBottom: SECTION_GAP / 2 - HEADING_TO_CARD }} />
-      <p style={BODY}>{label}</p>
+      <div aria-hidden style={{ height: 0.5, background: FADED_GREY, marginBottom: m.sectionGap / 2 - m.headingToCard }} />
+      <p style={m.body}>{label}</p>
       <motion.button
         onClick={onOpen}
         onHoverStart={() => setHover(true)}
@@ -1073,7 +1188,7 @@ function NextCard({ label, title, description, image, alt, tone, onOpen }: (type
         onBlur={() => setHover(false)}
         aria-label={label}
         className="relative w-full overflow-hidden text-left cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
-        style={{ height: 667, borderRadius: RADIUS, background: MEDIA_BG }}
+        style={{ height: n.h, borderRadius: m.radius, background: MEDIA_BG }}
         whileHover={CARD_HOVER}
         whileTap={{ scale: 0.99, transition: { duration: 0.1 } }}
         transition={HOVER_SPRING}
@@ -1087,7 +1202,7 @@ function NextCard({ label, title, description, image, alt, tone, onOpen }: (type
             left: -24,
             right: -24,
             bottom: 0,
-            height: 185,
+            height: n.strip,
             background: tone === "dark" ? "rgba(255,255,255,0.01)" : "rgba(248,250,252,0.6)",
             backdropFilter: `blur(${tone === "dark" ? 12 : 24}px)`,
             WebkitBackdropFilter: `blur(${tone === "dark" ? 12 : 24}px)`,
@@ -1095,10 +1210,10 @@ function NextCard({ label, title, description, image, alt, tone, onOpen }: (type
             WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 28px)",
           }}
         />
-        <div className="absolute flex flex-col items-start" style={{ left: 72, bottom: 64, gap: 13 }}>
-          <div className="flex items-center" style={{ gap: 12 }}>
-            <img src={star} alt="" width={30} height={31} draggable={false} style={{ filter: tone === "dark" ? "invert(1)" : undefined }} />
-            <span style={{ fontSize: 32, lineHeight: 1.1, letterSpacing: -1.6, fontWeight: 500, color: fg }}>{title}</span>
+        <div className="absolute flex flex-col items-start" style={{ left: n.x, bottom: n.bottom, gap: m.compact ? 6 : 13 }}>
+          <div className="flex items-center" style={{ gap: m.compact ? 8 : 12 }}>
+            <img src={star} alt="" width={n.star} height={n.star * 31 / 30} draggable={false} style={{ filter: tone === "dark" ? "invert(1)" : undefined }} />
+            <span style={{ fontSize: n.title, lineHeight: 1.1, letterSpacing: -n.title * 0.05, fontWeight: 500, color: fg }}>{title}</span>
             <motion.span
               className="flex"
               style={{ color: fg }}
@@ -1107,10 +1222,10 @@ function NextCard({ label, title, description, image, alt, tone, onOpen }: (type
               transition={{ duration: 0.35, ease: EASE_OUT }}
               aria-hidden
             >
-              <ArrowUpRight size={28} strokeWidth={1.75} />
+              <ArrowUpRight size={n.title * 0.875} strokeWidth={1.75} />
             </motion.span>
           </div>
-          <span style={{ fontSize: 20, lineHeight: "normal", letterSpacing: -0.2, color: fg, opacity: 0.8 }}>{description}</span>
+          <span style={{ fontSize: n.desc, lineHeight: "normal", letterSpacing: -0.2, color: fg, opacity: 0.8 }}>{description}</span>
         </div>
       </motion.button>
     </motion.div>
@@ -1123,17 +1238,19 @@ function ProjectTitle({ id, text, active }: { id: string; text: string; active: 
   const ref = useRef<HTMLHeadingElement>(null);
   const inView = useInView(ref, { once: true, margin: "0px 0px -10% 0px" });
   const words = text.split(" ");
+  const m = useM();
+  const starH = m.star * STAR_H / 38;
   return (
-    <h2 ref={ref} id={id} className="flex items-start" style={TITLE}>
+    <h2 ref={ref} id={id} className="flex items-start" style={m.title}>
       <motion.img
         src={star}
         alt=""
-        width={38}
-        height={STAR_H}
+        width={m.star}
+        height={starH}
         draggable={false}
         className="shrink-0"
         // centred on the first line, so a title that wraps keeps its star at the top
-        style={{ marginRight: 18, marginTop: (TITLE_H - STAR_H) / 2 }}
+        style={{ marginRight: m.starGap, marginTop: (m.title.fontSize * m.title.lineHeight - starH) / 2 }}
         initial={{ opacity: 0, scale: 0, rotate: -90 }}
         animate={{ opacity: inView ? 1 : 0, scale: inView ? 1 : 0, rotate: !inView ? -90 : active ? 90 : 0 }}
         transition={{ duration: 0.9, ease: EASE_OUT }}
@@ -1163,7 +1280,9 @@ function ProjectTitle({ id, text, active }: { id: string; text: string; active: 
 }
 
 // Digital Interfaces / Robotics, right-aligned with the menu (same style as Play's filters)
-function TabSwitch({ value, onChange }: { value: WorkTab; onChange: (t: WorkTab) => void }) {
+function TabSwitch({ value, onChange, compact = false }: { value: WorkTab; onChange: (t: WorkTab) => void; compact?: boolean }) {
+  const sm = siteMetrics(compact);
+  const size = compact ? 15 : MENU_SIZE;
   const tabs: { id: WorkTab; label: string }[] = [
     { id: "digital", label: "Digital Interfaces" },
     { id: "robotics", label: "Robotics" },
@@ -1171,7 +1290,8 @@ function TabSwitch({ value, onChange }: { value: WorkTab; onChange: (t: WorkTab)
   return (
     <motion.div
       className="absolute flex items-center"
-      style={{ right: NAV_X, top: NAV_TOP, gap: 20 }}
+      // Compact: second row, under the menu on the left
+      style={compact ? menuRow(true, sm.navX, sm.navTop + sm.menu * 1.1 + 14, 16) : { right: NAV_X, top: NAV_TOP, gap: 20 }}
       role="group"
       aria-label="Work type"
       initial={{ opacity: 0, y: -8 }}
@@ -1186,7 +1306,7 @@ function TabSwitch({ value, onChange }: { value: WorkTab; onChange: (t: WorkTab)
             onClick={() => onChange(t.id)}
             aria-pressed={on}
             className={`whitespace-nowrap cursor-pointer ${on ? "opacity-100" : "opacity-20"} ${LINK_CLASS}`}
-            style={{ ...MENU, fontWeight: on ? 600 : 400, color: "black", transition: "opacity 0.3s ease-out" }}
+            style={{ fontSize: size, lineHeight: 1.1, letterSpacing: -size * 0.05, fontWeight: on ? 600 : 400, color: "black", transition: "opacity 0.3s ease-out" }}
           >
             {t.label}
           </button>

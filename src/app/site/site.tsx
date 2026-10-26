@@ -17,6 +17,23 @@ export const GAP = 42; // space between cards; Figma: 32
 export const RADIUS = 18;
 export const MENU_SIZE = 22; // top menu and Play filters; Figma: 20
 
+// ── Phones and tablets ───────────────────────────────────────────────────────
+// Below this window width (CSS px) pages switch to a single-column "compact" layout drawn at real
+// CSS px (stage scale 1) instead of shrinking the 1920 desktop frame.
+export const COMPACT_BELOW = 1000;
+export type SiteMetrics = { navX: number; navTop: number; menu: number; contentTop: number; gap: number; radius: number };
+const DESKTOP_METRICS: SiteMetrics = { navX: NAV_X, navTop: NAV_TOP, menu: MENU_SIZE, contentTop: CONTENT_TOP, gap: GAP, radius: RADIUS };
+// Compact: content starts below the menu; pages with a second menu row (Work, Play) add SUBNAV_H
+const COMPACT_METRICS: SiteMetrics = { navX: 20, navTop: 22, menu: 17, contentTop: 92, gap: 16, radius: 14 };
+export const SUBNAV_H = 36;
+// Phones (narrower than this) centre the menus; tablets keep them left-aligned
+export const PHONE_BELOW = 600;
+export const isPhone = () => typeof window !== "undefined" && window.innerWidth < PHONE_BELOW;
+// Position for a compact menu row: centred across the width on phones, at the margin otherwise
+export const menuRow = (compact: boolean, left: number, top: number, gap: number) =>
+  compact && isPhone() ? { left: 0, right: 0, justifyContent: "center", top, gap } : { left, top, gap };
+export const siteMetrics = (compact: boolean) => (compact ? COMPACT_METRICS : DESKTOP_METRICS);
+
 // Figma uses Proxima Nova, which isn't licensed for web use; Figtree is the closest free match
 export const SANS = "'Figtree', system-ui, sans-serif";
 export const MONO = "'Source Code Pro', ui-monospace, monospace";
@@ -83,7 +100,8 @@ export function useAtBottom(offset = 80) {
 
 // ── Footer ───────────────────────────────────────────────────────────────────
 // "© Riddhi Kasar 2026", bottom-left in the menu's margin, styled like "To the top" (menu size, faded grey). Pages show it once you reach the end.
-export function SiteFooter({ show, scale }: { show: boolean; scale: number }) {
+export function SiteFooter({ show, scale, compact = false }: { show: boolean; scale: number; compact?: boolean }) {
+  const m = siteMetrics(compact);
   return (
     <AnimatePresence>
       {show && (
@@ -91,8 +109,8 @@ export function SiteFooter({ show, scale }: { show: boolean; scale: number }) {
           key="footer"
           className="fixed z-20 whitespace-nowrap pointer-events-none"
           style={{
-            left: NAV_X * scale, bottom: NAV_TOP * scale, color: FADED_GREY, fontWeight: 400,
-            fontSize: MENU_SIZE * scale, lineHeight: 1.1, letterSpacing: -MENU_SIZE * 0.05 * scale,
+            left: m.navX * scale, bottom: m.navTop * scale, color: FADED_GREY, fontWeight: 400,
+            fontSize: (compact ? 15 : m.menu) * scale, lineHeight: 1.1, letterSpacing: -(compact ? 15 : m.menu) * 0.05 * scale,
           }}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -111,8 +129,9 @@ export function useStageScale() {
   const compute = () => {
     const w = window.innerWidth;
     const h = window.innerHeight;
+    if (w < COMPACT_BELOW) return { scale: 1, stageW: w, viewportH: h, compact: true };
     const scale = Math.min(h / DESIGN_H, w / MIN_STAGE_W);
-    return { scale, stageW: w / scale, viewportH: h };
+    return { scale, stageW: w / scale, viewportH: h, compact: false };
   };
   const [state, setState] = useState(compute);
   useEffect(() => {
@@ -133,17 +152,19 @@ const NAV_ITEMS: { page: SitePage; label: string }[] = [
   { page: "about", label: "About" },
 ];
 
-export function TopNav({ current, onSelect, navRef, ink = "#000000" }: {
+export function TopNav({ current, onSelect, navRef, ink = "#000000", compact = false }: {
   current: SitePage;
   onSelect: (page: SitePage) => void;
   navRef?: React.Ref<HTMLElement>;
   ink?: string;
+  compact?: boolean;
 }) {
+  const m = siteMetrics(compact);
   return (
     <motion.nav
       ref={navRef}
       className="absolute z-20 flex items-center"
-      style={{ left: NAV_X, top: NAV_TOP, gap: 20 }}
+      style={menuRow(compact, m.navX, m.navTop, compact ? 16 : 20)}
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.1 }}
@@ -157,9 +178,9 @@ export function TopNav({ current, onSelect, navRef, ink = "#000000" }: {
             aria-current={isCurrent ? "page" : undefined}
             className={`text-center whitespace-nowrap cursor-pointer ${isCurrent ? "opacity-100" : "opacity-20"} ${LINK_CLASS}`}
             style={{
-              fontSize: MENU_SIZE,
+              fontSize: m.menu,
               lineHeight: 1.1,
-              letterSpacing: -MENU_SIZE * 0.05,
+              letterSpacing: -m.menu * 0.05,
               fontWeight: isCurrent ? 600 : 400,
               color: ink,
               transition: "color 0.45s ease-in-out, opacity 0.3s ease-out",
@@ -176,14 +197,16 @@ export function TopNav({ current, onSelect, navRef, ink = "#000000" }: {
 // ── To the top ───────────────────────────────────────────────────────────────
 // Bottom-right, as far from the bottom as the menu is from the top; arrow lifts on hover.
 // Defaults to scrolling the page up; Home passes its own `onClick` (it scrolls sideways).
-export function ToTop({ show, scale, onClick = () => scrollToY(0) }: { show: boolean; scale: number; onClick?: () => void }) {
+export function ToTop({ show, scale, onClick = () => scrollToY(0), compact = false }: { show: boolean; scale: number; onClick?: () => void; compact?: boolean }) {
+  const m = siteMetrics(compact);
+  const size = compact ? 15 : m.menu;
   return (
     <AnimatePresence>
       {show && (
         <motion.div
           key="top"
           className="fixed z-20"
-          style={{ right: NAV_X * scale, bottom: NAV_TOP * scale }}
+          style={{ right: m.navX * scale, bottom: m.navTop * scale }}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 8 }}
@@ -192,10 +215,10 @@ export function ToTop({ show, scale, onClick = () => scrollToY(0) }: { show: boo
           <button
             onClick={onClick}
             className={`group flex items-center cursor-pointer opacity-20 ${LINK_CLASS}`}
-            style={{ fontSize: MENU_SIZE * scale, lineHeight: 1.1, letterSpacing: -MENU_SIZE * 0.05 * scale, fontWeight: 400, gap: 6 * scale, color: "#000" }}
+            style={{ fontSize: size * scale, lineHeight: 1.1, letterSpacing: -size * 0.05 * scale, fontWeight: 400, gap: 6 * scale, color: "#000" }}
           >
             To the top
-            <ArrowUp size={18 * scale} strokeWidth={2} className="transition-transform duration-300 ease-out group-hover:-translate-y-[3px]" />
+            <ArrowUp size={size * 0.82 * scale} strokeWidth={2} className="transition-transform duration-300 ease-out group-hover:-translate-y-[3px]" />
           </button>
         </motion.div>
       )}

@@ -23,7 +23,7 @@ import playgroundImg from "@/assets/home/playground.avif";
 import lineContact from "@/assets/home/line_contact.svg";
 import star from "@/assets/home/star.svg";
 import {
-  CARD_HOVER, DESIGN_H, EASE_OUT, FADED_GREY, FLIP, GAP, HELLO_SHADE, HELLO_TEXT_SHADOW, HOVER_SPRING, LINK_CLASS, NAV_X, pageHandoff, SANS, SiteFooter, SURFACE, TEXT_OPACITY, ToTop, TopNav, useStageScale, type SitePage,
+  CARD_HOVER, DESIGN_H, EASE_OUT, FADED_GREY, FLIP, GAP, HELLO_SHADE, HELLO_TEXT_SHADOW, HOVER_SPRING, LINK_CLASS, NAV_X, pageHandoff, SANS, SiteFooter, siteMetrics, SURFACE, TEXT_OPACITY, ToTop, TopNav, useAtBottom, useScrolled, useStageScale, type SitePage,
 } from "../site/site";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -60,7 +60,13 @@ const TRACK_END = SLIDES[SLIDES.length - 1].left + SMALL_W + PAD_X;
 // ─────────────────────────────────────────────────────────────────────────────
 // HOME
 // ─────────────────────────────────────────────────────────────────────────────
-export default function HomePage({ navigate, dark }: {
+export default function HomePage(props: { navigate: (p: NavTarget) => void; dark: boolean }) {
+  // Phones and tablets get a vertical page instead of the sideways carousel
+  const { compact } = useStageScale();
+  return compact ? <CompactHome navigate={props.navigate} /> : <DesktopHome {...props} />;
+}
+
+function DesktopHome({ navigate, dark }: {
   navigate: (p: NavTarget) => void;
   dark: boolean;
 }) {
@@ -789,5 +795,127 @@ function Dots({ count, active, onSelect }: { count: number; active: number; onSe
         );
       })}
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPACT HOME (phones and tablets): the same cards, stacked vertically at real CSS px
+// ─────────────────────────────────────────────────────────────────────────────
+const COMPACT_PROJECTS: {
+  heading: string; title?: string; logo?: { src: string; w: number; h: number }; description?: string;
+  image: string; alt: string; target: NavTarget; position?: string; contain?: boolean;
+}[] = [
+  { heading: "I design and ship interfaces", title: "Noonchi", logo: { src: noonchiLogo, w: 22, h: 17 },
+    description: "Co-founding and building Noonchi - an intelligent app + wearable system to help autistic individuals make implicit social cues more explicit for clearer communication.",
+    image: noonchiScreen, alt: "Noonchi app interface", target: "noonchi", position: "0% 0%" },
+  { heading: "That shape how humans interact with intelligent systems", title: "Relevo", logo: { src: relevoLogo, w: 12, h: 17 },
+    description: "Building a physician-facing clinical dashboard and a soft-robotic wearable device for assisting in post knee surgery recovery.",
+    image: relevoImg, alt: "Relevo wearable and clinical dashboard", target: "relevo" },
+  { heading: "I also build robots", title: "TROD",
+    description: "Building a tactile robotic obstacle detector for EMG-controlled navigation and prosthetic applications.",
+    image: trodImg, alt: "TROD robot", target: "trod" },
+  { heading: "And take photos of, write about, and draw things that catch my eye",
+    image: playgroundImg, alt: "Frozen river at golden hour", target: "play-all" },
+];
+
+// One of Home's 539×667 photo cards, drawn at its design size and scaled to the column
+function ScaledCard({ width, children }: { width: number; children: React.ReactNode }) {
+  const k = width / SMALL_W;
+  return (
+    <div className="relative" style={{ width, height: CARD_H * k }}>
+      {/* the card sits CARD_TOP down inside its slide box, so shift that back up */}
+      <div className="absolute top-0 left-0 origin-top-left" style={{ width: SMALL_W, height: CARD_TOP + CARD_H, transform: `scale(${k}) translateY(${-CARD_TOP}px)` }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function CompactHeading({ text }: { text: string }) {
+  return (
+    <motion.h2
+      className="flex items-start"
+      style={{ fontSize: 24, lineHeight: 1.15, letterSpacing: -0.9, fontWeight: 500 }}
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "0px 0px -10% 0px" }}
+      transition={{ duration: 0.8, ease: EASE_OUT }}
+    >
+      <motion.img
+        src={star} alt="" width={20} height={21} draggable={false} className="shrink-0"
+        style={{ marginRight: 10, marginTop: (24 * 1.15 - 21) / 2 }}
+        initial={{ scale: 0, rotate: -90 }}
+        whileInView={{ scale: 1, rotate: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.1 }}
+      />
+      {text}
+    </motion.h2>
+  );
+}
+
+function CompactHome({ navigate }: { navigate: (p: NavTarget) => void }) {
+  const { stageW } = useStageScale();
+  const sm = siteMetrics(true);
+  const colW = Math.min(stageW - 2 * sm.navX, 640);
+  const atBottom = useAtBottom();
+  const scrolled = useScrolled();
+  const photoW = Math.min(colW, 460);
+  const reveal = {
+    initial: { opacity: 0, y: 32 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: "0px 0px -8% 0px" },
+    transition: { duration: 0.9, ease: EASE_OUT },
+  } as const;
+  return (
+    <MotionConfig reducedMotion="user">
+      <div className="relative bg-white" style={{ fontFamily: SANS, minHeight: "100vh", color: "#000" }}>
+        <div className="fixed top-0 left-0 right-0 z-30" style={{ height: sm.navTop * 2 + sm.menu * 1.1 + 8, background: "linear-gradient(#ffffff 65%, rgba(255,255,255,0))" }}>
+          <TopNav current="home" compact onSelect={page => (page === "home" ? window.scrollTo({ top: 0, behavior: "smooth" }) : navigate(page))} />
+        </div>
+
+        <div className="flex flex-col mx-auto" style={{ width: colW, paddingTop: sm.contentTop, paddingBottom: 96, gap: 56 }}>
+          <div className="flex justify-center">
+            <ScaledCard width={photoW}><IntroCard slide={{ left: 0, width: SMALL_W }} onOpen={() => navigate("about")} /></ScaledCard>
+          </div>
+
+          {COMPACT_PROJECTS.map(p => (
+            <section key={p.heading} className="flex flex-col" style={{ gap: 18 }}>
+              <CompactHeading text={p.heading} />
+              <motion.button
+                {...reveal}
+                onClick={() => navigate(p.target)}
+                aria-label={p.title ? `Open ${p.title}` : p.heading}
+                className="relative w-full overflow-hidden text-left cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+                style={{ borderRadius: sm.radius, background: SURFACE }}
+                whileTap={{ scale: 0.985 }}
+              >
+                <div className="relative w-full" style={{ aspectRatio: "4 / 3" }}>
+                  <img src={p.image} alt={p.alt} loading="lazy" decoding="async" draggable={false}
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+                    style={{ objectPosition: p.position }} />
+                </div>
+                {p.title && (
+                  <div className="flex flex-col" style={{ padding: "16px 18px 18px", gap: 6 }}>
+                    <div className="flex items-center" style={{ gap: 8 }}>
+                      {p.logo && <img src={p.logo.src} alt="" width={p.logo.w} height={p.logo.h} draggable={false} />}
+                      <span style={{ fontSize: 20, lineHeight: 1.1, letterSpacing: -0.8, fontWeight: 500 }}>{p.title}</span>
+                      <ArrowUpRight size={18} strokeWidth={1.75} className="opacity-60" />
+                    </div>
+                    <p style={{ fontSize: 15, lineHeight: 1.4, letterSpacing: -0.1, opacity: TEXT_OPACITY }}>{p.description}</p>
+                  </div>
+                )}
+              </motion.button>
+            </section>
+          ))}
+
+          <div className="flex justify-center">
+            <ScaledCard width={photoW}><OutroCard slide={{ left: 0, width: SMALL_W }} onOpen={() => navigate("about")} /></ScaledCard>
+          </div>
+        </div>
+      </div>
+      <SiteFooter show={atBottom} scale={1} compact />
+      <ToTop show={scrolled} scale={1} compact />
+    </MotionConfig>
   );
 }

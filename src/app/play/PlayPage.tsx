@@ -22,7 +22,7 @@ import art0409 from "@/assets/art/art_0409.avif";
 import art_izumi from "@/assets/art/art_izumi.avif";
 import { POEMS, type Poem } from "./poems";
 import {
-  CARD_HOVER, CONTENT_TOP, EASE_OUT, GAP, HOVER_SPRING, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, SERIF, SiteFooter, SURFACE, TEXT_OPACITY, ToTop, useAtBottom, useScrolled,
+  CARD_HOVER, CONTENT_TOP, EASE_OUT, GAP, HOVER_SPRING, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, SERIF, menuRow, SiteFooter, siteMetrics, SUBNAV_H, SURFACE, TEXT_OPACITY, ToTop, useAtBottom, useScrolled,
   TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -122,6 +122,38 @@ const ALL_LANES: { share: number; blocks: Block[] }[] = [
 ];
 const poemByTitle = (t: string) => POEMS.find(p => p.title === t)!;
 
+type Lane = { share: number; blocks: Block[] };
+type Spacing = { x: number; gap: number };
+
+// ── Phones and tablets ──
+// The desktop arrangements regrouped into fewer columns: one on phones, two on tablets. Blocks are
+// dealt out in the order they appear across the desktop columns, so the mix stays the same.
+const interleave = <T,>(lists: T[][]) => {
+  const out: T[] = [];
+  for (let i = 0; i < Math.max(...lists.map(l => l.length)); i++) lists.forEach(l => { if (l[i] !== undefined) out.push(l[i]); });
+  return out;
+};
+const POEM_BLOCKS: Block[] = Object.keys(POEM_KEYS);
+function compactLanes(filter: "all" | "poem", cols: number): Lane[] {
+  const blocks = filter === "poem" ? POEM_BLOCKS : interleave(ALL_LANES.map(l => l.blocks));
+  // A poem never shares a row in the narrow layouts (its text would shrink): rows holding one are split
+  const hasPoem = (ids: string[]) => ids.some(id => POEM_KEYS[id]);
+  const flat = blocks.flatMap(b => {
+    const ids = typeof b === "object" && !Array.isArray(b) ? b.row : Array.isArray(b) ? b : [b];
+    return cols === 1 || hasPoem(ids) ? ids : [b];
+  });
+  const lanes: Lane[] = Array.from({ length: cols }, () => ({ share: 1, blocks: [] }));
+  flat.forEach((b, i) => lanes[i % cols].blocks.push(b));
+  return lanes;
+}
+function compactColumns(columns: Column[], cols: number): Column[] {
+  if (cols >= columns.length) return columns;
+  const rows = interleave(columns.map(c => c.rows));
+  const out: Column[] = Array.from({ length: cols }, () => ({ share: 1, rows: [] }));
+  rows.forEach((r, i) => out[i % cols].rows.push(r));
+  return out;
+}
+
 // Poem card metrics (design px)
 const POEM_PAD = 24;
 const POEM_SIZE = 20;
@@ -153,7 +185,7 @@ function poemNaturalWidth(poem: Poem) {
   );
 }
 
-function layoutLane(blocks: Block[], x: number, laneW: number, top: number, poemRowExtra = 0) {
+function layoutLane(blocks: Block[], x: number, laneW: number, top: number, sp: Spacing, poemRowExtra = 0) {
   const placed: Placed[] = [];
   const poems: PlacedPoem[] = [];
   let poemRows = 0;
@@ -162,7 +194,7 @@ function layoutLane(blocks: Block[], x: number, laneW: number, top: number, poem
     const fill = typeof block === "object" && !Array.isArray(block) ? block : null;
     const ids = fill ? fill.row : Array.isArray(block) ? block : [block];
     // Poems get the width they need first (up to half the row); images share the rest in their Figma proportions
-    const rowUsable = laneW - GAP * (ids.length - 1);
+    const rowUsable = laneW - sp.gap * (ids.length - 1);
     const poemW = ids.map(id => (POEM_KEYS[id] ? poemNaturalWidth(poemByTitle(POEM_KEYS[id])) : 0));
     const hasImages = ids.some(id => !POEM_KEYS[id]);
     const poemCap = fill ? rowUsable * fill.poemShare : hasImages ? rowUsable / 2 : rowUsable;
@@ -189,14 +221,14 @@ function layoutLane(blocks: Block[], x: number, laneW: number, top: number, poem
         placed.push(pl); rowImages.push(pl);
         if (!fill) rowH = Math.max(rowH, h);
       }
-      ix += w + GAP;
+      ix += w + sp.gap;
     });
     if (rowPoems.length) { poemRows++; rowH += poemRowExtra; }
     if (fill) rowImages.forEach(pl => coverCrop(pl, rowH));
     rowPoems.forEach(pp => { pp.height = rowH; poems.push(pp); }); // poems fill their row's height
-    y += rowH + GAP;
+    y += rowH + sp.gap;
   }
-  return { placed, poems, bottom: y - GAP, poemRows };
+  return { placed, poems, bottom: y - sp.gap, poemRows };
 }
 
 // Stretch an image to a new height, cropping its sides evenly; the title keeps its spot on the artwork
@@ -213,19 +245,19 @@ function coverCrop(pl: Placed, height: number) {
   pl.height = height;
 }
 
-function layoutLanes(top: number, contentW: number) {
-  const total = ALL_LANES.reduce((t, l) => t + l.share, 0);
-  const usable = contentW - GAP * (ALL_LANES.length - 1);
+function layoutLanes(top: number, contentW: number, sp: Spacing, lanesIn: Lane[] = lanesIn) {
+  const total = lanesIn.reduce((t, l) => t + l.share, 0);
+  const usable = contentW - sp.gap * (lanesIn.length - 1);
   const xs: number[] = [];
-  let x = NAV_X;
-  const widths = ALL_LANES.map(l => usable * (l.share / total));
-  widths.forEach(w => { xs.push(x); x += w + GAP; });
+  let x = sp.x;
+  const widths = lanesIn.map(l => usable * (l.share / total));
+  widths.forEach(w => { xs.push(x); x += w + sp.gap; });
 
   // First pass, then level the columns: a column that ends early gives the spare height to its poems
-  const first = ALL_LANES.map((l, i) => layoutLane(l.blocks, xs[i], widths[i], top));
+  const first = lanesIn.map((l, i) => layoutLane(l.blocks, xs[i], widths[i], top, sp));
   const bottom = Math.max(...first.map(r => r.bottom));
   const lanes = first.map((r, i) =>
-    r.poemRows && r.bottom < bottom ? layoutLane(ALL_LANES[i].blocks, xs[i], widths[i], top, (bottom - r.bottom) / r.poemRows) : r);
+    r.poemRows && r.bottom < bottom ? layoutLane(lanesIn[i].blocks, xs[i], widths[i], top, sp, (bottom - r.bottom) / r.poemRows) : r);
 
   return {
     placed: lanes.flatMap(r => r.placed),
@@ -238,12 +270,12 @@ type Placed = Item & { x: number; y: number; width: number; height: number };
 type PlacedPoem = { poem: Poem; x: number; y: number; width: number; height: number; fit: number };
 type ViewEntry = { key: string } & ({ kind: "image"; item: Placed } | { kind: "poem"; poem: Poem });
 
-function layoutColumns(columns: Column[], top: number, contentW: number) {
+function layoutColumns(columns: Column[], top: number, contentW: number, sp: Spacing) {
   const total = columns.reduce((t, c) => t + c.share, 0);
-  const usable = contentW - GAP * (columns.length - 1);
+  const usable = contentW - sp.gap * (columns.length - 1);
   const placed: Placed[] = [];
   const columnEnds: { x: number; width: number; bottom: number }[] = [];
-  let x = NAV_X;
+  let x = sp.x;
   let bottom = top;
 
   for (const col of columns) {
@@ -252,7 +284,7 @@ function layoutColumns(columns: Column[], top: number, contentW: number) {
     for (const row of col.rows) {
       // Items in a row split the width in their Figma proportions and keep their own heights
       const items = row.map(id => ITEMS[id]);
-      const rowUsable = colW - GAP * (items.length - 1);
+      const rowUsable = colW - sp.gap * (items.length - 1);
       const widthSum = items.reduce((t, it) => t + it.w, 0);
       let ix = x;
       let rowH = 0;
@@ -260,14 +292,14 @@ function layoutColumns(columns: Column[], top: number, contentW: number) {
         const w = rowUsable * (it.w / widthSum);
         const h = w * (it.h / it.w);
         placed.push({ ...it, x: ix, y, width: w, height: h });
-        ix += w + GAP;
+        ix += w + sp.gap;
         rowH = Math.max(rowH, h);
       }
-      y += rowH + GAP;
+      y += rowH + sp.gap;
     }
-    bottom = Math.max(bottom, y - GAP);
-    columnEnds.push({ x, width: colW, bottom: y - GAP });
-    x += colW + GAP;
+    bottom = Math.max(bottom, y - sp.gap);
+    columnEnds.push({ x, width: colW, bottom: y - sp.gap });
+    x += colW + sp.gap;
   }
   return { placed, bottom, columns: columnEnds };
 }
@@ -284,13 +316,17 @@ const FILTERS: { id: Filter; label: string }[] = [
 ];
 
 export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void }) {
-  const { scale, stageW } = useStageScale();
+  const { scale, stageW, compact } = useStageScale();
+  const sm = siteMetrics(compact);
+  const sp: Spacing = { x: sm.navX, gap: sm.gap };
+  const cols = !compact ? 0 : stageW < 600 ? 1 : 2; // compact column count
+  const top = compact ? sm.contentTop + SUBNAV_H : CONTENT_TOP;
   const atBottom = useAtBottom();
   const scrolled = useScrolled();
   // Play always opens on All
   const [filter, setFilter] = useState<Filter>("all");
-  const headerH = NAV_TOP * 2 + MENU_SIZE * 1.1;
-  const contentW = stageW - 2 * NAV_X;
+  const headerH = compact ? sm.navTop + sm.menu * 1.1 + SUBNAV_H + 12 : NAV_TOP * 2 + MENU_SIZE * 1.1;
+  const contentW = stageW - 2 * sm.navX;
 
   useFontsReady(); // poem sizes are measured from the real font
 
@@ -298,19 +334,20 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
   let allPoems: PlacedPoem[] = [];
   let poemRow: { top: number; poems: Poem[] } | null = null;
   const [rowH, setRowH] = useState(0);
-  let bottom = CONTENT_TOP;
+  let bottom = top;
 
   if (filter === "photo" || filter === "art") {
-    const r = layoutColumns(filter === "photo" ? PHOTO_COLUMNS : ART_COLUMNS, CONTENT_TOP, contentW);
+    const columns = filter === "photo" ? PHOTO_COLUMNS : ART_COLUMNS;
+    const r = layoutColumns(compact ? compactColumns(columns, cols) : columns, top, contentW, sp);
     placed = r.placed; bottom = r.bottom;
-  } else if (filter === "poem") {
-    poemRow = { top: CONTENT_TOP, poems: POEMS };
-    bottom = CONTENT_TOP + rowH;
+  } else if (filter === "poem" && !compact) {
+    poemRow = { top, poems: POEMS };
+    bottom = top + rowH;
   } else {
-    const r = layoutLanes(CONTENT_TOP, contentW);
+    const r = layoutLanes(top, contentW, sp, compact ? compactLanes(filter === "poem" ? "poem" : "all", cols) : ALL_LANES);
     placed = r.placed; allPoems = r.poems; bottom = r.bottom;
   }
-  const height = bottom + BOTTOM_MARGIN;
+  const height = bottom + (compact ? 96 : BOTTOM_MARGIN);
 
   // Viewer order follows the page: top to bottom, then left to right
   const entries: (ViewEntry & { x: number; y: number })[] = [
@@ -339,8 +376,8 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
           style={{ height: headerH * scale, background: "linear-gradient(#ffffff 65%, rgba(255,255,255,0))" }}
         >
           <div className="absolute top-0 left-0 origin-top-left pointer-events-auto" style={{ width: stageW, transform: `scale(${scale})` }}>
-            <TopNav current="play" onSelect={page => page !== "play" && navigate(page)} />
-            <Filters value={filter} onChange={setFilter} />
+            <TopNav current="play" compact={compact} onSelect={page => page !== "play" && navigate(page)} />
+            <Filters value={filter} onChange={setFilter} compact={compact} />
           </div>
         </div>
 
@@ -366,9 +403,9 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
           </div>
         </div>
       </div>
-      <Lightbox entry={openIndex >= 0 ? sequence[openIndex] : null} scale={scale} onClose={close} onStep={step} />
-      <SiteFooter show={atBottom} scale={scale} />
-      <ToTop show={scrolled && openIndex < 0} scale={scale} />
+      <Lightbox entry={openIndex >= 0 ? sequence[openIndex] : null} scale={scale} onClose={close} onStep={step} compact={compact} />
+      <SiteFooter show={atBottom} scale={scale} compact={compact} />
+      <ToTop show={scrolled && openIndex < 0} scale={scale} compact={compact} />
     </MotionConfig>
   );
 }
@@ -493,11 +530,14 @@ function PoemCard({ poem, fit = 1, animate = true, inView = false, delay = 0, st
 // ─────────────────────────────────────────────────────────────────────────────
 // FILTERS — mirror the menu on the right
 // ─────────────────────────────────────────────────────────────────────────────
-function Filters({ value, onChange }: { value: Filter; onChange: (f: Filter) => void }) {
+function Filters({ value, onChange, compact = false }: { value: Filter; onChange: (f: Filter) => void; compact?: boolean }) {
+  const sm = siteMetrics(compact);
+  const size = compact ? 15 : MENU_SIZE;
   return (
     <motion.div
       className="absolute z-20 flex items-center"
-      style={{ right: NAV_X, top: NAV_TOP, gap: 20 }}
+      // Compact: second row, under the menu on the left
+      style={compact ? menuRow(true, sm.navX, sm.navTop + sm.menu * 1.1 + 14, 16) : { right: NAV_X, top: NAV_TOP, gap: 20 }}
       role="group"
       aria-label="Filter"
       initial={{ opacity: 0, y: -8 }}
@@ -513,7 +553,7 @@ function Filters({ value, onChange }: { value: Filter; onChange: (f: Filter) => 
             aria-pressed={on}
             // Same style as the top menu: selected is semibold, the rest are faded
             className={`whitespace-nowrap cursor-pointer ${on ? "opacity-100" : "opacity-20"} ${LINK_CLASS}`}
-            style={{ fontSize: MENU_SIZE, lineHeight: 1.1, letterSpacing: -MENU_SIZE * 0.05, fontWeight: on ? 600 : 400, color: "black", transition: "opacity 0.3s ease-out" }}
+            style={{ fontSize: size, lineHeight: 1.1, letterSpacing: -size * 0.05, fontWeight: on ? 600 : 400, color: "black", transition: "opacity 0.3s ease-out" }}
           >
             {f.label}
           </button>
@@ -627,10 +667,11 @@ function useFontsReady() {
 }
 
 // Largest box with the card's aspect ratio that fits within 78% of the viewport
-function fitFrame(item: Placed) {
+function fitFrame(item: Placed, compact = false) {
   const ratio = item.w / item.h;
-  const maxW = window.innerWidth * 0.78;
-  const maxH = window.innerHeight * 0.78;
+  // phones: nearly full width, leaving room for the arrows below
+  const maxW = window.innerWidth * (compact ? 0.9 : 0.78);
+  const maxH = window.innerHeight * (compact ? 0.66 : 0.78);
   const width = Math.min(maxW, maxH * ratio);
   return { width, height: width / ratio };
 }
@@ -639,21 +680,22 @@ function fitFrame(item: Placed) {
 // LIGHTBOX — full photo over a blurred view of the page
 // ─────────────────────────────────────────────────────────────────────────────
 // Font scale for a poem shown in the viewer: as large as fits 80% of the viewport, up to 1.4× the screen scale
-function viewerPoemFit(poem: Poem, scale: number) {
+function viewerPoemFit(poem: Poem, scale: number, compact = false) {
   const lines = poem.stanzas.flatMap(st => st.split("\n"));
   const widest = Math.max(
     textWidth(poem.title, `800 ${POEM_SIZE}px ${SERIF}`),
     ...lines.map(l => textWidth(l, `500 ${POEM_SIZE}px ${SERIF}`)),
   );
   const tall = poemHeight(poem, 1) - 2 * POEM_PAD;
-  const byW = (window.innerWidth * 0.7 - 2 * POEM_PAD) / widest;
-  const byH = (window.innerHeight * 0.8 - 2 * POEM_PAD) / tall;
+  const byW = (window.innerWidth * (compact ? 0.9 : 0.7) - 2 * POEM_PAD) / widest;
+  const byH = (window.innerHeight * (compact ? 0.68 : 0.8) - 2 * POEM_PAD) / tall;
   return Math.min(1.4 * scale, byW, byH);
 }
 
-function Lightbox({ entry, scale, onClose, onStep }: {
+function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
   entry: ViewEntry | null;
   scale: number;
+  compact?: boolean;
   onClose: () => void;
   onStep: (dir: 1 | -1) => void;
 }) {
@@ -679,8 +721,9 @@ function Lightbox({ entry, scale, onClose, onStep }: {
     };
   }, [isOpen, onClose, onStep]);
 
-  const edge = NAV_X * scale;
-  const arrowSize = 56 * scale;
+  const sm = siteMetrics(compact);
+  const edge = sm.navX * scale;
+  const arrowSize = compact ? 48 : 56 * scale;
 
   return createPortal(
     <AnimatePresence>
@@ -718,9 +761,9 @@ function Lightbox({ entry, scale, onClose, onStep }: {
                 >
                   <PoemCard
                     poem={entry.poem}
-                    fit={viewerPoemFit(entry.poem, scale)}
+                    fit={viewerPoemFit(entry.poem, scale, compact)}
                     animate={false}
-                    style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.12)", background: SURFACE }}
+                    style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.12)", background: SURFACE, width: "max-content" }}
                   />
                 </motion.div>
               ) : item && (
@@ -736,7 +779,7 @@ function Lightbox({ entry, scale, onClose, onStep }: {
                 {/* Same framing as the card: its aspect ratio and crop, just larger */}
                 <div
                   className="relative overflow-hidden"
-                  style={{ ...fitFrame(item), borderRadius: 12 * scale, boxShadow: "0 24px 60px rgba(0,0,0,0.18)" }}
+                  style={{ ...fitFrame(item, compact), borderRadius: 12 * scale, boxShadow: "0 24px 60px rgba(0,0,0,0.18)" }}
                 >
                   <img
                     src={item.src}
@@ -759,7 +802,7 @@ function Lightbox({ entry, scale, onClose, onStep }: {
           </div>
 
           {/* Close — sits where the filters are */}
-          <div className="absolute" style={{ right: edge, top: (NAV_TOP - 3) * scale }}>
+          <div className="absolute" style={{ right: edge, top: (sm.navTop - 3) * scale }}>
             <motion.button
               ref={closeRef}
               onClick={onClose}
@@ -780,8 +823,16 @@ function Lightbox({ entry, scale, onClose, onStep }: {
               key={dir}
               onClick={() => onStep(dir)}
               aria-label={dir < 0 ? "Previous" : "Next"}
-              className="absolute top-1/2 flex items-center justify-center rounded-full bg-white cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              style={{
+              className={`absolute flex items-center justify-center rounded-full bg-white cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${compact ? "" : "top-1/2"}`}
+              // phones: side by side under the picture, so they never cover it
+              style={compact ? {
+                left: `calc(50% ${dir < 0 ? "-" : "+"} ${arrowSize / 2 + 10}px)`,
+                bottom: 36,
+                marginLeft: -arrowSize / 2,
+                width: arrowSize,
+                height: arrowSize,
+                boxShadow: "0 6px 20px rgba(0,0,0,0.10)",
+              } : {
                 [dir < 0 ? "left" : "right"]: edge,
                 width: arrowSize,
                 height: arrowSize,

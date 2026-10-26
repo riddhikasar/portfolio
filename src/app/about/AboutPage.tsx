@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { motion, MotionConfig, useInView } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 
@@ -6,7 +6,7 @@ import introBg from "@/assets/home/intro_bg.avif";
 import star from "@/assets/work/star.svg";
 import { ContactLinks } from "../home/HomePage";
 import {
-  CONTENT_TOP, EASE_OUT, FLIP, GAP, HELLO_SHADE, HELLO_TEXT_SHADOW, HOVER_SPRING, MENU_SIZE, NAV_TOP, NAV_X, pageHandoff,
+  CONTENT_TOP, EASE_OUT, FLIP, GAP, HELLO_SHADE, HELLO_TEXT_SHADOW, HOVER_SPRING, NAV_X, pageHandoff, siteMetrics,
   RADIUS, SANS, SiteFooter, SURFACE, TEXT_GREY, ToTop, TopNav, useAtBottom, useScrolled, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -25,6 +25,14 @@ const BODY = { fontSize: 24, lineHeight: "normal", letterSpacing: -0.24, color: 
 const HEADING_TO_TEXT = 48;
 const PARAGRAPH_GAP = "1.5em";
 const SECTION_SPACE = GAP * 3; // last paragraph to the next heading
+
+// Phones and tablets: one column, real CSS px
+const COMPACT = {
+  heading: { fontSize: 26, lineHeight: 1.15, letterSpacing: -1, fontWeight: 500 },
+  body: { fontSize: 17, lineHeight: 1.45, letterSpacing: -0.1, color: TEXT_GREY },
+  star: 22, starGap: 12, headingToText: 20, paragraphGap: "1em", sectionSpace: 56, maxW: 640,
+} as const;
+const Compact = createContext(false);
 
 // Hello card text rises in, unless the card is flipping over from Home (then it's already there)
 const rise = (delay: number, instant = false) => ({
@@ -64,16 +72,19 @@ function Heading({ children, delay = 0 }: { children: string; delay?: number }) 
   const ref = useRef<HTMLHeadingElement>(null);
   const inView = useInView(ref, { once: true, margin: "0px 0px -10% 0px" });
   const words = children.split(" ");
+  const compact = useContext(Compact);
+  const h = compact ? COMPACT.heading : HEADING;
+  const starW = compact ? COMPACT.star : 38;
   return (
-    <h2 ref={ref} className="flex items-start" style={HEADING}>
+    <h2 ref={ref} className="flex items-start" style={h}>
       <motion.img
         src={star}
         alt=""
-        width={38}
-        height={39}
+        width={starW}
+        height={starW * 39 / 38}
         draggable={false}
         className="shrink-0"
-        style={{ marginRight: 18, marginTop: (HEADING.fontSize * HEADING.lineHeight - 39) / 2 }}
+        style={{ marginRight: compact ? COMPACT.starGap : 18, marginTop: (h.fontSize * h.lineHeight - starW * 39 / 38) / 2 }}
         initial={{ opacity: 0, scale: 0, rotate: -90 }}
         animate={inView ? { opacity: 1, scale: 1, rotate: 0 } : undefined}
         transition={{ duration: 0.9, ease: EASE_OUT, delay }}
@@ -98,8 +109,12 @@ function Heading({ children, delay = 0 }: { children: string; delay?: number }) 
 
 // Body under a heading: indented to line up with the heading text, not the star
 function Body({ children }: { children: ReactNode }) {
+  const compact = useContext(Compact);
+  const style = compact
+    ? { ...COMPACT.body, gap: COMPACT.paragraphGap, marginTop: COMPACT.headingToText }
+    : { ...BODY, gap: PARAGRAPH_GAP, marginTop: HEADING_TO_TEXT, paddingLeft: 38 + 18 };
   return (
-    <motion.div {...TEXT_REVEAL} className="flex flex-col" style={{ ...BODY, gap: PARAGRAPH_GAP, marginTop: HEADING_TO_TEXT, paddingLeft: 38 + 18 }}>
+    <motion.div {...TEXT_REVEAL} className="flex flex-col" style={style}>
       {children}
     </motion.div>
   );
@@ -108,13 +123,17 @@ function Body({ children }: { children: ReactNode }) {
 const B = ({ children }: { children: ReactNode }) => <b style={{ fontWeight: 600, color: "#000" }}>{children}</b>;
 
 export default function AboutPage({ navigate }: { navigate: (p: SitePage) => void }) {
-  const { scale, stageW } = useStageScale();
-  const headerH = NAV_TOP * 2 + MENU_SIZE * 1.1;
+  const { scale, stageW, compact } = useStageScale();
+  const m = siteMetrics(compact);
+  const headerH = m.navTop * 2 + m.menu * 1.1;
   const atBottom = useAtBottom();
   const scrolled = useScrolled();
 
-  const rowW = Math.min(ROW_W, stageW - 2 * NAV_X);
-  const textW = rowW - PHOTO_W - GAP;
+  const rowW = compact ? Math.min(COMPACT.maxW, stageW - 2 * m.navX) : Math.min(ROW_W, stageW - 2 * NAV_X);
+  const textW = compact ? rowW : rowW - PHOTO_W - GAP;
+  // Compact: the hello card spans the column and everything on it scales with it
+  const photoW = compact ? rowW : PHOTO_W;
+  const k = photoW / PHOTO_W;
 
   // Clicking the hello card flips it edge-on, then Home opens and its card turns the rest of the way
   const [flipOut, setFlipOut] = useState(false);
@@ -140,13 +159,14 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage) => voi
 
   return (
     <MotionConfig reducedMotion="user">
+      <Compact.Provider value={compact}>
       <div className="relative bg-white" style={{ fontFamily: SANS, minHeight: "100vh", color: "#000" }}>
         <div
           className="fixed top-0 left-0 right-0 z-30 pointer-events-none"
           style={{ height: headerH * scale, background: "linear-gradient(#ffffff 65%, rgba(255,255,255,0))" }}
         >
           <div className="absolute top-0 left-0 origin-top-left pointer-events-auto" style={{ width: stageW, transform: `scale(${scale})` }}>
-            <TopNav current="about" onSelect={page => page !== "about" && navigate(page)} />
+            <TopNav current="about" compact={compact} onSelect={page => page !== "about" && navigate(page)} />
           </div>
         </div>
 
@@ -154,13 +174,13 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage) => voi
           <div
             ref={stageRef}
             className="absolute top-0 left-0 origin-top-left"
-            style={{ width: stageW, transform: `scale(${scale})`, paddingTop: CONTENT_TOP, paddingBottom: BOTTOM_MARGIN }}
+            style={{ width: stageW, transform: `scale(${scale})`, paddingTop: m.contentTop, paddingBottom: compact ? 96 : BOTTOM_MARGIN }}
           >
-            <div className="flex items-stretch mx-auto" style={{ width: rowW, gap: GAP }}>
+            <div className={`flex mx-auto ${compact ? "flex-col" : "items-stretch"}`} style={{ width: rowW, gap: m.gap }}>
               {/* Photo card: Home's hello card, as tall as the text beside it */}
               <motion.div
                 className="relative shrink-0 overflow-hidden cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
-                style={{ width: PHOTO_W, borderRadius: RADIUS, transformPerspective: FLIP.perspective, zIndex: flipOut ? 5 : undefined }}
+                style={{ width: photoW, height: compact ? 667 * k : undefined, borderRadius: m.radius, transformPerspective: FLIP.perspective, zIndex: flipOut ? 5 : undefined }}
                 role="link"
                 tabIndex={0}
                 aria-label="Back to Home"
@@ -177,6 +197,8 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage) => voi
               >
                 <img src={introBg} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" draggable={false} />
                 <div className="absolute inset-0" style={{ background: HELLO_SHADE }} />
+                {/* Card contents in Home's design px; on phones the whole box scales with the card */}
+                <div className="absolute top-0 left-0 origin-top-left" style={{ width: PHOTO_W, height: 667, transform: k !== 1 ? `scale(${k})` : undefined }}>
                 <div className="absolute flex flex-col items-start text-white" style={{ left: 113, top: 185, gap: 32, textShadow: HELLO_TEXT_SHADOW }}>
                   <h1 className="whitespace-nowrap" style={{ fontSize: 72, lineHeight: 1.1, letterSpacing: -3.6, fontWeight: 500 }}>
                     <motion.span className="block" {...rise(0.35, flipIn)}>
@@ -200,12 +222,13 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage) => voi
                     <ContactLinks />
                   </motion.div>
                 </div>
+                </div>
               </motion.div>
 
               {/* Text card */}
               <motion.div
                 className="flex flex-col"
-                style={{ width: textW, borderRadius: RADIUS, background: SURFACE, padding: "56px 72px 72px 40px" }}
+                style={{ width: textW, borderRadius: m.radius, background: SURFACE, padding: compact ? "28px 22px 32px" : "56px 72px 72px 40px" }}
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.25 }}
@@ -224,11 +247,15 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage) => voi
                     <A href="https://aestheticsbeyonddata.com/beyond-data">generative AI public exhibits</A>.
                   </p>
                   <p>
+                    Now I design and ship products for start-ups with crazy technologies - making them trustworthy,
+                    joyful, and magical.
+                  </p>
+                  <p>
                     Read some of my <A href="https://orcid.org/0009-0003-3207-176X">publications</A> here.
                   </p>
                 </Body>
 
-                <div style={{ marginTop: SECTION_SPACE }}>
+                <div style={{ marginTop: compact ? COMPACT.sectionSpace : SECTION_SPACE }}>
                   <Heading>A manifesto</Heading>
                 </div>
                 <Body>
@@ -260,9 +287,10 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage) => voi
             </div>
           </div>
         </div>
-        <SiteFooter show={atBottom} scale={scale} />
-        <ToTop show={scrolled} scale={scale} />
+        <SiteFooter show={atBottom} scale={scale} compact={compact} />
+        <ToTop show={scrolled} scale={scale} compact={compact} />
       </div>
+      </Compact.Provider>
     </MotionConfig>
   );
 }
