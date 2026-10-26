@@ -22,7 +22,7 @@ import art0409 from "@/assets/art/art_0409.avif";
 import art_izumi from "@/assets/art/art_izumi.avif";
 import { POEMS, type Poem } from "./poems";
 import {
-  CARD_HOVER, CONTENT_TOP, EASE_OUT, GAP, HOVER_SPRING, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, SERIF, SiteFooter, SURFACE, TEXT_OPACITY, useAtBottom,
+  CARD_HOVER, CONTENT_TOP, EASE_OUT, GAP, HOVER_SPRING, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, SERIF, SiteFooter, SURFACE, TEXT_OPACITY, ToTop, useAtBottom, useScrolled,
   TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -286,6 +286,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void }) {
   const { scale, stageW } = useStageScale();
   const atBottom = useAtBottom();
+  const scrolled = useScrolled();
   // Play always opens on All
   const [filter, setFilter] = useState<Filter>("all");
   const headerH = NAV_TOP * 2 + MENU_SIZE * 1.1;
@@ -367,6 +368,7 @@ export default function PlayPage({ navigate }: { navigate: (p: SitePage) => void
       </div>
       <Lightbox entry={openIndex >= 0 ? sequence[openIndex] : null} scale={scale} onClose={close} onStep={step} />
       <SiteFooter show={atBottom} scale={scale} />
+      <ToTop show={scrolled && openIndex < 0} scale={scale} />
     </MotionConfig>
   );
 }

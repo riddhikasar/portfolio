@@ -23,7 +23,7 @@ import playgroundImg from "@/assets/home/playground.avif";
 import lineContact from "@/assets/home/line_contact.svg";
 import star from "@/assets/home/star.svg";
 import {
-  CARD_HOVER, DESIGN_H, EASE_OUT, FADED_GREY, GAP, HOVER_SPRING, LINK_CLASS, NAV_X, SANS, SiteFooter, SURFACE, TEXT_OPACITY, TopNav, useStageScale, type SitePage,
+  CARD_HOVER, DESIGN_H, EASE_OUT, FADED_GREY, FLIP, GAP, HELLO_SHADE, HELLO_TEXT_SHADOW, HOVER_SPRING, LINK_CLASS, NAV_X, pageHandoff, SANS, SiteFooter, SURFACE, TEXT_OPACITY, ToTop, TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -366,6 +366,7 @@ export default function HomePage({ navigate, dark }: {
     </motion.div>
     {/* Home scrolls sideways, so its end is the last slide */}
     <SiteFooter show={active === SLIDES.length - 1} scale={scale} />
+    <ToTop show={active > 0} scale={scale} onClick={() => go(0)} />
     </MotionConfig>
     </PaletteContext.Provider>
   );
@@ -429,42 +430,62 @@ function PhotoCard({ slide, index, tilt, onOpen, children }: {
   children: React.ReactNode;
 }) {
   const [entered, setEntered] = useState(false);
+  // Arriving from About's card (hello card only): finish its flip
+  const [flipIn] = useState(() => {
+    if (index !== 0 || !pageHandoff.flipToHome) return false;
+    pageHandoff.flipToHome = false;
+    return true;
+  });
+  // Clicking flips the card edge-on, then About opens and its card turns the rest of the way
+  const [flipping, setFlipping] = useState(false);
+  const flip = () => {
+    if (flipping) return;
+    pageHandoff.flipToAbout = true;
+    setFlipping(true);
+    window.setTimeout(onOpen, FLIP.duration * 1000); // open About once the card is edge-on
+  };
   return (
     <motion.div
       data-slide={index}
       className="absolute rounded-[18px] overflow-hidden cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
-      style={{ left: slide.left, top: CARD_TOP, width: SMALL_W, height: CARD_H }}
+      style={{ left: slide.left, top: CARD_TOP, width: SMALL_W, height: CARD_H, transformPerspective: FLIP.perspective, zIndex: flipping ? 5 : undefined }}
       role="link"
       tabIndex={0}
       aria-label="About Riddhi"
-      onClick={onOpen}
-      onKeyDown={e => { if (e.key === "Enter" && e.target === e.currentTarget) onOpen(); }}
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={entered ? { opacity: 1, scale: 1 } : { opacity: 1, scale: 1, transition: { duration: 0.9, ease: EASE_OUT } }}
-      onAnimationComplete={() => setEntered(true)}
+      onClick={flip}
+      onKeyDown={e => { if (e.key === "Enter" && e.target === e.currentTarget) flip(); }}
+      initial={flipIn ? { opacity: 1, rotateY: -90, scale: 1.04 } : { opacity: 0, scale: 0.97 }}
+      animate={
+        flipping ? { opacity: 1, rotateY: 90, scale: 1.04, rotate: 0, y: 0, boxShadow: "0px 30px 60px rgba(0,0,0,0.2)", transition: { duration: FLIP.duration, ease: FLIP.ease } }
+        : entered ? { opacity: 1, scale: 1, rotateY: 0 }
+        : { opacity: 1, scale: 1, rotateY: 0, transition: { duration: flipIn ? 0.55 : 0.9, ease: EASE_OUT } }
+      }
+      onAnimationComplete={() => { if (!flipping) setEntered(true); }}
       transition={HOVER_SPRING}
-      whileHover={{ ...CARD_HOVER, rotate: tilt }}
-      whileTap={{ scale: 0.99, transition: { duration: 0.1 } }}
+      whileHover={flipping ? undefined : { ...CARD_HOVER, rotate: tilt }}
+      whileTap={flipping ? undefined : { scale: 0.99, transition: { duration: 0.1 } }}
     >
       <img src={introBg} alt="" className="absolute inset-0 size-full object-cover" draggable={false} />
-      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.15)" }} />
+      <div className="absolute inset-0" style={{ background: HELLO_SHADE }} />
       {children}
     </motion.div>
   );
 }
 
-const rise = (delay: number) => ({
-  initial: { opacity: 0, y: 24 },
+// Hello card text rises in, unless the card is flipping back from About (then it's already there)
+const rise = (delay: number, instant = false) => ({
+  initial: instant ? false : { opacity: 0, y: 24 },
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.8, ease: EASE_OUT, delay },
-});
+} as const);
 
 function IntroCard({ slide, onOpen }: { slide: Slide; onOpen: () => void }) {
+  const [instant] = useState(() => pageHandoff.flipToHome); // read before the card clears it
   return (
     <PhotoCard slide={slide} index={0} tilt={-2} onOpen={onOpen}>
-      <div className="absolute flex flex-col items-start text-white" style={{ left: 113, top: 185, gap: 32 }}>
+      <div className="absolute flex flex-col items-start text-white" style={{ left: 113, top: 185, gap: 32, textShadow: HELLO_TEXT_SHADOW }}>
         <h1 style={{ fontSize: 72, lineHeight: 1.1, letterSpacing: -3.6, fontWeight: 500 }} className="whitespace-nowrap">
-          <motion.span className="block" {...rise(0.35)}>
+          <motion.span className="block" {...rise(0.35, instant)}>
             Hello!
             <motion.span
               className="inline-block"
@@ -476,16 +497,16 @@ function IntroCard({ slide, onOpen }: { slide: Slide; onOpen: () => void }) {
               👋
             </motion.span>
           </motion.span>
-          <motion.span className="block" {...rise(0.45)}>I’m Riddhi</motion.span>
+          <motion.span className="block" {...rise(0.45, instant)}>I’m Riddhi</motion.span>
         </h1>
         <motion.p
           className="whitespace-nowrap"
           style={{ fontSize: 42, lineHeight: 1.1, letterSpacing: -2.1, fontWeight: 500 }}
-          {...rise(0.6)}
+          {...rise(0.6, instant)}
         >
           A Design Engineer
         </motion.p>
-        <motion.div {...rise(0.75)}>
+        <motion.div {...rise(0.75, instant)}>
           <ContactLinks />
         </motion.div>
       </div>
@@ -496,7 +517,7 @@ function IntroCard({ slide, onOpen }: { slide: Slide; onOpen: () => void }) {
 function OutroCard({ slide, onOpen }: { slide: Slide; onOpen: () => void }) {
   return (
     <PhotoCard slide={slide} index={SLIDES.length - 1} tilt={2} onOpen={onOpen}>
-      <div className="absolute flex flex-col items-start text-white" style={{ left: 68, top: 141, gap: 32 }}>
+      <div className="absolute flex flex-col items-start text-white" style={{ left: 68, top: 141, gap: 32, textShadow: HELLO_TEXT_SHADOW }}>
         <p style={{ fontSize: 42, lineHeight: 1.1, letterSpacing: -2.1, fontWeight: 500, width: 347 }}>
           True depth comes from applying everything you know to everything you do.
         </p>

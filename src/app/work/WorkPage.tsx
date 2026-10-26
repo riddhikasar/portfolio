@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { AnimatePresence, motion, MotionConfig, useInView } from "motion/react";
-import { ArrowUp, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
 import star from "@/assets/work/star.svg";
 import trodHero from "@/assets/work/trod_hero.avif";
@@ -51,7 +51,7 @@ import relevoClipMp4 from "@/assets/relevo/demo_1.mp4";
 import relevoHero from "@/assets/home/relevo.avif";
 import trodCard from "@/assets/home/trod.avif";
 import {
-  CARD_HOVER, CONTENT_TOP, EASE_OUT, CAPTION_GREY, FADED_GREY, GAP, HOVER_SPRING, scrollToY, SiteFooter, SURFACE, TEXT_GREY, useAtBottom, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS,
+  CARD_HOVER, CONTENT_TOP, EASE_OUT, CAPTION_GREY, FADED_GREY, GAP, HOVER_SPRING, scrollToY, SiteFooter, SURFACE, TEXT_GREY, ToTop, useAtBottom, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS,
   TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -1285,30 +1285,3 @@ function ProjectIndex({ projects, active, activeSub, openSubs, onSelect }: {
   );
 }
 
-// Bottom-right once the page has scrolled; arrow lifts on hover. Sits as far from the bottom as the menu is from the top.
-function ToTop({ show, scale }: { show: boolean; scale: number }) {
-  return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          key="top"
-          className="fixed z-20"
-          style={{ right: NAV_X * scale, bottom: NAV_TOP * scale }} // right corner, same margin as the menu has at the top
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 8 }}
-          transition={{ duration: 0.35, ease: EASE_OUT }}
-        >
-          <button
-            onClick={() => scrollToY(0)}
-            className={`group flex items-center cursor-pointer opacity-20 ${LINK_CLASS}`}
-            style={{ ...MENU, fontSize: MENU_SIZE * scale, letterSpacing: MENU.letterSpacing * scale, fontWeight: 400, gap: 6 * scale }}
-          >
-            To the top
-            <ArrowUp size={18 * scale} strokeWidth={2} className="transition-transform duration-300 ease-out group-hover:-translate-y-[3px]" />
-          </button>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}

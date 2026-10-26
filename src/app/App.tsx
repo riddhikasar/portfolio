@@ -14,6 +14,7 @@ import PlayPage from "./play/PlayPage";
 import NoonchiCaseStudy from "./noonchi/NoonchiCaseStudy";
 import WorkPageV2 from "./work/WorkPage";
 import AboutPageV2 from "./about/AboutPage";
+import { pageHandoff } from "./site/site";
 
 // ── Project thumbnails ─────────────────────────────────────────────
 import thumbNoonchi from "@/assets/thumbnails/noonchi_thumbnail.png";
@@ -1049,7 +1050,8 @@ export default function App() {
       {/* Page content with fade transition */}
       <AnimatePresence mode="wait">
         {page === "home" ? (
-          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
+          // When the hello card flips between Home and About, the card carries the transition, so skip the page fade
+          <motion.div key="home" initial={{ opacity: pageHandoff.flipToHome ? 1 : 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: pageHandoff.flipToAbout ? 0 : 0.22 } }} transition={{ duration: 0.22 }}>
             <HomePage
               navigate={p => {
                 if (p === "play-all") {
@@ -1113,17 +1115,8 @@ export default function App() {
             <EpicurePage dark={dark} onPrevProject={handlePrevProject} onNextProject={handleNextProject} />
           </motion.div>
         ) : (
-          <motion.div key="about" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <AboutPageV2
-              navigate={p => {
-                if (p === "work-robotics-liquid") {
-                  // "generative AI public exhibits" opens Work › Robotics at Liquid Data
-                  history.pushState({ page: "work", tab: "robotics" }, "", withBasePath("/work?tab=robotics#liquid"));
-                  setTabRaw("robotics");
-                  setPageRaw("work");
-                } else navigate(p);
-              }}
-            />
+          <motion.div key="about" initial={{ opacity: pageHandoff.flipToAbout ? 1 : 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: pageHandoff.flipToHome ? 0 : 0.22 } }} transition={{ duration: 0.22 }}>
+            <AboutPageV2 navigate={p => navigate(p)} />
           </motion.div>
         )}
       </AnimatePresence>

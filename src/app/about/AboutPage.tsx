@@ -6,28 +6,32 @@ import introBg from "@/assets/home/intro_bg.avif";
 import star from "@/assets/work/star.svg";
 import { ContactLinks } from "../home/HomePage";
 import {
-  CONTENT_TOP, EASE_OUT, GAP, MENU_SIZE, NAV_TOP, RADIUS, SANS, SiteFooter, SURFACE, TEXT_GREY,
-  TopNav, useAtBottom, useStageScale, type SitePage,
+  CONTENT_TOP, EASE_OUT, FLIP, GAP, HELLO_SHADE, HELLO_TEXT_SHADOW, HOVER_SPRING, MENU_SIZE, NAV_TOP, NAV_X, pageHandoff,
+  RADIUS, SANS, SiteFooter, SURFACE, TEXT_GREY, ToTop, TopNav, useAtBottom, useScrolled, useStageScale, type SitePage,
 } from "../site/site";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Layout and type, in design px, matching Home and Work: Home's intro card (539 wide, 120 from the
-// edge, text at 113/185), cards GAP apart, 42 headings with the star, 24 body in two weights.
-// The photo card stretches to the height of the text card; its text stays where it is on Home.
+// Layout and type, in design px. Cards start CONTENT_TOP down like Play's cards and Work's titles.
+// Together the two cards are as wide as Work's image cards (1395), centred, GAP apart. The photo
+// card keeps Home's width and stretches to the text card's height; its text stays where it is on
+// Home. Headings are Home's (42, with the star); body is Work's (24, two weights).
 // ─────────────────────────────────────────────────────────────────────────────
-const PAD_X = 120;
+const ROW_W = 1395; // Work's card width
 const PHOTO_W = 539;
-const TEXT_X = PAD_X + PHOTO_W + GAP;
 const BOTTOM_MARGIN = GAP * 4;
 
 const HEADING = { fontSize: 42, lineHeight: 1.1, letterSpacing: -2.1, fontWeight: 500 } as const;
 const BODY = { fontSize: 24, lineHeight: "normal", letterSpacing: -0.24, color: TEXT_GREY } as const;
+const HEADING_TO_TEXT = 48;
+const PARAGRAPH_GAP = "1.5em";
+const SECTION_SPACE = GAP * 3; // last paragraph to the next heading
 
-const rise = (delay: number) => ({
-  initial: { opacity: 0, y: 24 },
+// Hello card text rises in, unless the card is flipping over from Home (then it's already there)
+const rise = (delay: number, instant = false) => ({
+  initial: instant ? false : { opacity: 0, y: 24 },
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.8, ease: EASE_OUT, delay },
-});
+} as const);
 
 const TEXT_REVEAL = {
   initial: { opacity: 0, y: 40, filter: "blur(6px)" },
@@ -44,11 +48,12 @@ function A({ href, onClick, children }: { href?: string; onClick?: () => void; c
       onClick={onClick ? e => { e.preventDefault(); onClick(); } : undefined}
       target={href?.startsWith("http") ? "_blank" : undefined}
       rel="noreferrer"
-      className="group inline-flex items-baseline underline underline-offset-4 decoration-1 outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4"
-      style={{ color: "#000", fontWeight: 600, gap: 2 }}
+      // inline (not inline-flex) so a long link wraps with the sentence instead of jumping to a new line
+      className="group underline underline-offset-4 decoration-1 outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4"
+      style={{ color: "#000", fontWeight: 600 }}
     >
       {children}
-      <ArrowUpRight size="0.8em" strokeWidth={2} className="self-center transition-transform duration-300 ease-out group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
+      <ArrowUpRight size="0.8em" strokeWidth={2} className="inline-block align-baseline ml-0.5 transition-transform duration-300 ease-out group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
     </a>
   );
 }
@@ -94,7 +99,7 @@ function Heading({ children, delay = 0 }: { children: string; delay?: number }) 
 // Body under a heading: indented to line up with the heading text, not the star
 function Body({ children }: { children: ReactNode }) {
   return (
-    <motion.div {...TEXT_REVEAL} className="flex flex-col" style={{ ...BODY, gap: "1em", marginTop: 32, paddingLeft: 38 + 18 }}>
+    <motion.div {...TEXT_REVEAL} className="flex flex-col" style={{ ...BODY, gap: PARAGRAPH_GAP, marginTop: HEADING_TO_TEXT, paddingLeft: 38 + 18 }}>
       {children}
     </motion.div>
   );
@@ -102,11 +107,26 @@ function Body({ children }: { children: ReactNode }) {
 
 const B = ({ children }: { children: ReactNode }) => <b style={{ fontWeight: 600, color: "#000" }}>{children}</b>;
 
-export default function AboutPage({ navigate }: { navigate: (p: SitePage | "work-robotics-liquid") => void }) {
+export default function AboutPage({ navigate }: { navigate: (p: SitePage) => void }) {
   const { scale, stageW } = useStageScale();
   const headerH = NAV_TOP * 2 + MENU_SIZE * 1.1;
   const atBottom = useAtBottom();
-  const textW = Math.min(stageW - PAD_X - TEXT_X, 1920 - PAD_X - TEXT_X);
+  const scrolled = useScrolled();
+
+  const rowW = Math.min(ROW_W, stageW - 2 * NAV_X);
+  const textW = rowW - PHOTO_W - GAP;
+
+  // Clicking the hello card flips it edge-on, then Home opens and its card turns the rest of the way
+  const [flipOut, setFlipOut] = useState(false);
+  const flipHome = () => {
+    if (flipOut) return;
+    pageHandoff.flipToHome = true;
+    setFlipOut(true);
+    window.setTimeout(() => navigate("home"), FLIP.duration * 1000);
+  };
+
+  // Arriving from Home's card: finish its flip
+  const [flipIn] = useState(() => { const f = pageHandoff.flipToAbout; pageHandoff.flipToAbout = false; return f; });
 
   const stageRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(1080);
@@ -134,22 +154,32 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage | "work
           <div
             ref={stageRef}
             className="absolute top-0 left-0 origin-top-left"
-            style={{ width: stageW, transform: `scale(${scale})`, paddingTop: CONTENT_TOP + 78, paddingBottom: BOTTOM_MARGIN }}
+            style={{ width: stageW, transform: `scale(${scale})`, paddingTop: CONTENT_TOP, paddingBottom: BOTTOM_MARGIN }}
           >
-            <div className="flex items-stretch" style={{ marginLeft: PAD_X, gap: GAP }}>
+            <div className="flex items-stretch mx-auto" style={{ width: rowW, gap: GAP }}>
               {/* Photo card: Home's hello card, as tall as the text beside it */}
               <motion.div
-                className="relative shrink-0 overflow-hidden"
-                style={{ width: PHOTO_W, borderRadius: RADIUS }}
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.15 }}
+                className="relative shrink-0 overflow-hidden cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+                style={{ width: PHOTO_W, borderRadius: RADIUS, transformPerspective: FLIP.perspective, zIndex: flipOut ? 5 : undefined }}
+                role="link"
+                tabIndex={0}
+                aria-label="Back to Home"
+                onClick={flipHome}
+                onKeyDown={e => { if (e.key === "Enter" && e.target === e.currentTarget) flipHome(); }}
+                initial={flipIn ? { rotateY: -90, scale: 1.04 } : { opacity: 0, y: 40 }}
+                animate={
+                  flipOut ? { opacity: 1, y: 0, rotateY: 90, scale: 1.04, transition: { duration: FLIP.duration, ease: FLIP.ease } }
+                  : flipIn ? { rotateY: 0, scale: 1 } : { opacity: 1, y: 0 }
+                }
+                transition={flipIn ? { duration: 0.55, ease: EASE_OUT } : { duration: 0.9, ease: EASE_OUT, delay: 0.15 }}
+                whileHover={flipOut ? undefined : { scale: 1.01, rotate: -0.6, transition: HOVER_SPRING }}
+                whileTap={flipOut ? undefined : { scale: 0.99, transition: { duration: 0.1 } }}
               >
                 <img src={introBg} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" draggable={false} />
-                <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.15)" }} />
-                <div className="absolute flex flex-col items-start text-white" style={{ left: 113, top: 185, gap: 32 }}>
+                <div className="absolute inset-0" style={{ background: HELLO_SHADE }} />
+                <div className="absolute flex flex-col items-start text-white" style={{ left: 113, top: 185, gap: 32, textShadow: HELLO_TEXT_SHADOW }}>
                   <h1 className="whitespace-nowrap" style={{ fontSize: 72, lineHeight: 1.1, letterSpacing: -3.6, fontWeight: 500 }}>
-                    <motion.span className="block" {...rise(0.35)}>
+                    <motion.span className="block" {...rise(0.35, flipIn)}>
                       Hello!
                       <motion.span
                         className="inline-block"
@@ -161,12 +191,12 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage | "work
                         👋
                       </motion.span>
                     </motion.span>
-                    <motion.span className="block" {...rise(0.45)}>I’m Riddhi</motion.span>
+                    <motion.span className="block" {...rise(0.45, flipIn)}>I’m Riddhi</motion.span>
                   </h1>
-                  <motion.p className="whitespace-nowrap" style={{ fontSize: 42, lineHeight: 1.1, letterSpacing: -2.1, fontWeight: 500 }} {...rise(0.6)}>
+                  <motion.p className="whitespace-nowrap" style={{ fontSize: 42, lineHeight: 1.1, letterSpacing: -2.1, fontWeight: 500 }} {...rise(0.6, flipIn)}>
                     A Design Engineer
                   </motion.p>
-                  <motion.div {...rise(0.75)}>
+                  <motion.div {...rise(0.75, flipIn)}>
                     <ContactLinks />
                   </motion.div>
                 </div>
@@ -183,23 +213,22 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage | "work
                 <Heading delay={0.4}>I design and ship interfaces that redefine how humans talk, interact, and collaborate with intelligent systems.</Heading>
                 <Body>
                   <p>
-                    I was drawn to Product Design because I wanted to create experiences that feel magical. But to bring them to
-                    reality, I had to learn how to build things! So that led me to do my Masters in Design Engineering from{" "}
-                    <A href="https://mde.harvard.edu/">Harvard</A>. And ever since then, I have been designing and shipping
-                    products for start-ups with crazy technologies - making them trustworthy, joyful, and magical.
+                    I studied Product Design with a specialization in Industrial Design at PES University in India, then pursued
+                    my Master’s in Design Engineering at <A href="https://mde.harvard.edu/">Harvard</A>, alongside a minor in
+                    Human-Robot Interaction at <B>MIT</B>.
                   </p>
                   <p>
                     I was previously at <B>Siemens</B> making AR/VR experiences, worked at the <B>Indian Institute of Science
                     (IISc)</B> building future tech, and collaborated with <B>Harvard</B> and <B>MIT</B> labs to build
                     bioelectronics, study agentic AI behavior, and create{" "}
-                    <A onClick={() => navigate("work-robotics-liquid")}>generative AI public exhibits</A>.
+                    <A href="https://aestheticsbeyonddata.com/beyond-data">generative AI public exhibits</A>.
                   </p>
                   <p>
                     Read some of my <A href="https://orcid.org/0009-0003-3207-176X">publications</A> here.
                   </p>
                 </Body>
 
-                <div style={{ marginTop: GAP * 2 }}>
+                <div style={{ marginTop: SECTION_SPACE }}>
                   <Heading>A manifesto</Heading>
                 </div>
                 <Body>
@@ -213,7 +242,7 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage | "work
                     into reality.
                   </p>
                   <p>
-                    After all, we are limited not by what is possible, but by what we believe can be possible. The technology
+                    After all, we are limited not by what is possible, but by what we <em>believe</em> can be possible. The technology
                     often already exists if only you know where to look. That’s why I think <B>true depth comes from applying
                     everything you know to everything you do.</B> The more worlds we understand, the more possibilities we see.
                   </p>
@@ -222,7 +251,8 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage | "work
                   <p>I mean, any good designer or engineer can solve a problem if they think hard enough.</p>
                   <p>But what if we combine it? And work to bring this experience to life?</p>
                   <p>
-                    What I seek to do is go beyond solving the problems of the world, and <B>create some magic along the way.</B>
+                    What I seek to do is not only solve the problems of the world, but to also <B>create some magic along the
+                    way.</B>
                   </p>
                   <p style={{ color: "#000" }}>- Riddhi</p>
                 </Body>
@@ -231,6 +261,7 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage | "work
           </div>
         </div>
         <SiteFooter show={atBottom} scale={scale} />
+        <ToTop show={scrolled} scale={scale} />
       </div>
     </MotionConfig>
   );

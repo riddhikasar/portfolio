@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, animate, motion } from "motion/react";
+import { ArrowUp } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared layout system for the redesigned pages. Pages are authored on the
@@ -65,14 +66,17 @@ export function scrollToY(target: number) {
 export function useAtBottom(offset = 80) {
   const [atBottom, setAtBottom] = useState(false);
   useEffect(() => {
-    const check = () => setAtBottom(window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - offset);
-    check();
+    // Ignore the first moments: pages measure and set their height just after mounting, and until
+    // then a short page would read as "at the bottom"
+    let ready = false;
+    const check = () => ready && setAtBottom(window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - offset);
+    const t = window.setTimeout(() => { ready = true; check(); }, 500);
     window.addEventListener("scroll", check, { passive: true });
     window.addEventListener("resize", check);
     // pages set their height after measuring their content, so re-check when it changes
     const ro = new ResizeObserver(check);
     ro.observe(document.body);
-    return () => { window.removeEventListener("scroll", check); window.removeEventListener("resize", check); ro.disconnect(); };
+    return () => { window.clearTimeout(t); window.removeEventListener("scroll", check); window.removeEventListener("resize", check); ro.disconnect(); };
   }, [offset]);
   return atBottom;
 }
@@ -168,3 +172,56 @@ export function TopNav({ current, onSelect, navRef, ink = "#000000" }: {
     </motion.nav>
   );
 }
+
+// ── To the top ───────────────────────────────────────────────────────────────
+// Bottom-right, as far from the bottom as the menu is from the top; arrow lifts on hover.
+// Defaults to scrolling the page up; Home passes its own `onClick` (it scrolls sideways).
+export function ToTop({ show, scale, onClick = () => scrollToY(0) }: { show: boolean; scale: number; onClick?: () => void }) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          key="top"
+          className="fixed z-20"
+          style={{ right: NAV_X * scale, bottom: NAV_TOP * scale }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
+          transition={{ duration: 0.35, ease: EASE_OUT }}
+        >
+          <button
+            onClick={onClick}
+            className={`group flex items-center cursor-pointer opacity-20 ${LINK_CLASS}`}
+            style={{ fontSize: MENU_SIZE * scale, lineHeight: 1.1, letterSpacing: -MENU_SIZE * 0.05 * scale, fontWeight: 400, gap: 6 * scale, color: "#000" }}
+          >
+            To the top
+            <ArrowUp size={18 * scale} strokeWidth={2} className="transition-transform duration-300 ease-out group-hover:-translate-y-[3px]" />
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// True once the page has scrolled past `offset` px
+export function useScrolled(offset = 400) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const check = () => setScrolled(window.scrollY > offset);
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    return () => window.removeEventListener("scroll", check);
+  }, [offset]);
+  return scrolled;
+}
+
+// ── Hello card ───────────────────────────────────────────────────────────────
+// Shade over the sky photo so the white text reads: darker behind the text at the top, clearing
+// towards the grass. Used by Home's hello/magic cards and About's card.
+export const HELLO_SHADE =
+  "linear-gradient(180deg, rgba(0,20,45,0.42) 0%, rgba(0,20,45,0.34) 40%, rgba(0,20,45,0.12) 70%, rgba(0,0,0,0.05) 100%)";
+export const HELLO_TEXT_SHADOW = "0 2px 18px rgba(0,15,35,0.35)";
+
+// Home's hello/magic card flips over (to 90°) and hands off to About, whose card finishes the flip
+export const FLIP = { duration: 0.42, ease: [0.55, 0, 0.75, 0.3], perspective: 1400 } as const;
+export const pageHandoff = { flipToAbout: false, flipToHome: false }; // About's card flips back to Home the same way
