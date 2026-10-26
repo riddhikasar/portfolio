@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
+import { AnimatePresence, animate, motion } from "motion/react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared layout system for the redesigned pages. Pages are authored on the
@@ -22,11 +22,12 @@ export const MONO = "'Source Code Pro', ui-monospace, monospace";
 export const SERIF = "'EB Garamond', Georgia, serif";
 export const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
-// The site's only greys: readable secondary text, faded/inactive things, and card backgrounds
+// The site's only greys: readable secondary text, captions, faded/inactive things, and card backgrounds
 export const TEXT_OPACITY = 0.8; // body and any secondary text (Home's descriptions)
 export const FADED_OPACITY = 0.2; // inactive menu items, idle dots
 export const TEXT_GREY = `rgba(0,0,0,${TEXT_OPACITY})`;
 export const FADED_GREY = `rgba(0,0,0,${FADED_OPACITY})`;
+export const CAPTION_GREY = "rgba(0,0,0,0.5)"; // captions under images and videos
 export const SURFACE = "#f8fafc"; // every card, callout and poem background
 export const HAIRLINE = "1px solid rgba(0,0,0,0.08)"; // thin borders and dividers
 
@@ -39,8 +40,67 @@ export type SitePage = "home" | "work" | "play" | "about";
 
 // Every link brightens and lifts slightly
 export const LINK_CLASS =
-  "relative outline-none transition-[opacity,transform] duration-300 ease-out hover:opacity-100 hover:-translate-y-px " +
-  "focus-visible:opacity-100 focus-visible:-translate-y-px focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4";
+  "relative outline-none transition-[opacity,transform] duration-300 ease-out hover:opacity-100 hover:-translate-y-0.5 " +
+  "focus-visible:opacity-100 focus-visible:-translate-y-0.5 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4";
+
+// ── Scrolling ────────────────────────────────────────────────────────────────
+// Smooth scroll that always lands (the browser's own smooth scroll gets cut short on long pages).
+// Wheel, touch or keys cancel it straight away.
+export function scrollToY(target: number) {
+  const from = window.scrollY;
+  const distance = Math.abs(target - from);
+  if (distance < 2) return;
+  const controls = animate(from, target, {
+    duration: Math.min(1.4, 0.5 + distance / 6000),
+    ease: [0.65, 0, 0.35, 1],
+    onUpdate: v => window.scrollTo(0, v),
+  });
+  const cancel = () => { controls.stop(); off(); };
+  const off = () => ["wheel", "touchstart", "keydown"].forEach(e => window.removeEventListener(e, cancel));
+  ["wheel", "touchstart", "keydown"].forEach(e => window.addEventListener(e, cancel, { passive: true }));
+  controls.then(off);
+}
+
+// True once the page is scrolled to (within `offset` px of) its end
+export function useAtBottom(offset = 80) {
+  const [atBottom, setAtBottom] = useState(false);
+  useEffect(() => {
+    const check = () => setAtBottom(window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - offset);
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    // pages set their height after measuring their content, so re-check when it changes
+    const ro = new ResizeObserver(check);
+    ro.observe(document.body);
+    return () => { window.removeEventListener("scroll", check); window.removeEventListener("resize", check); ro.disconnect(); };
+  }, [offset]);
+  return atBottom;
+}
+
+// ── Footer ───────────────────────────────────────────────────────────────────
+// "© Riddhi Kasar 2026", bottom-left in the menu's margin, styled like "To the top" (menu size, faded grey). Pages show it once you reach the end.
+export function SiteFooter({ show, scale }: { show: boolean; scale: number }) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.p
+          key="footer"
+          className="fixed z-20 whitespace-nowrap pointer-events-none"
+          style={{
+            left: NAV_X * scale, bottom: NAV_TOP * scale, color: FADED_GREY, fontWeight: 400,
+            fontSize: MENU_SIZE * scale, lineHeight: 1.1, letterSpacing: -MENU_SIZE * 0.05 * scale,
+          }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 12 }}
+          transition={{ duration: 0.5, ease: EASE_OUT }}
+        >
+          © Riddhi Kasar 2026
+        </motion.p>
+      )}
+    </AnimatePresence>
+  );
+}
 
 // ── Stage scaling ────────────────────────────────────────────────────────────
 export function useStageScale() {

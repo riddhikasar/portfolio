@@ -23,7 +23,7 @@ import playgroundImg from "@/assets/home/playground.avif";
 import lineContact from "@/assets/home/line_contact.svg";
 import star from "@/assets/home/star.svg";
 import {
-  CARD_HOVER, DESIGN_H, EASE_OUT, FADED_GREY, GAP, HOVER_SPRING, LINK_CLASS, NAV_X, SANS, SURFACE, TEXT_OPACITY, TopNav, useStageScale, type SitePage,
+  CARD_HOVER, DESIGN_H, EASE_OUT, FADED_GREY, GAP, HOVER_SPRING, LINK_CLASS, NAV_X, SANS, SiteFooter, SURFACE, TEXT_OPACITY, TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -364,6 +364,8 @@ export default function HomePage({ navigate, dark }: {
         <Dots count={SLIDES.length} active={active} onSelect={go} />
       </div>
     </motion.div>
+    {/* Home scrolls sideways, so its end is the last slide */}
+    <SiteFooter show={active === SLIDES.length - 1} scale={scale} />
     </MotionConfig>
     </PaletteContext.Provider>
   );
@@ -372,7 +374,7 @@ export default function HomePage({ navigate, dark }: {
 // ─────────────────────────────────────────────────────────────────────────────
 // CONTACT LINKS (shared by intro + outro)
 // ─────────────────────────────────────────────────────────────────────────────
-function ContactLinks() {
+export function ContactLinks() {
   const links = [
     { label: "LinkedIn", href: "https://www.linkedin.com/in/riddhikasar/" },
     { label: "Email", href: "mailto:riddhikasar02@gmail.com" },

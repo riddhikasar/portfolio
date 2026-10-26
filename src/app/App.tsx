@@ -13,6 +13,7 @@ import HomePage from "./home/HomePage";
 import PlayPage from "./play/PlayPage";
 import NoonchiCaseStudy from "./noonchi/NoonchiCaseStudy";
 import WorkPageV2 from "./work/WorkPage";
+import AboutPageV2 from "./about/AboutPage";
 
 // ── Project thumbnails ─────────────────────────────────────────────
 import thumbNoonchi from "@/assets/thumbnails/noonchi_thumbnail.png";
@@ -1032,7 +1033,7 @@ export default function App() {
       style={{ backgroundColor: bgColor, WebkitFontSmoothing: "antialiased", wordBreak: "break-word", overflowWrap: "anywhere", lineHeight: 1.35 }}
     >
       {/* Header stays in normal document flow (redesigned pages have their own nav) */}
-      {page !== "home" && page !== "play" && page !== "work" && page !== "noonchi" && <div
+      {page !== "home" && page !== "play" && page !== "work" && page !== "about" && page !== "noonchi" && <div
         className="transition-colors duration-300"
         style={{ backgroundColor: dark ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.88)", backdropFilter: "blur(10px)" }}
       >
@@ -1113,7 +1114,16 @@ export default function App() {
           </motion.div>
         ) : (
           <motion.div key="about" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <AboutPage dark={dark} setPage={navigate} setTab={setActiveTab} />
+            <AboutPageV2
+              navigate={p => {
+                if (p === "work-robotics-liquid") {
+                  // "generative AI public exhibits" opens Work › Robotics at Liquid Data
+                  history.pushState({ page: "work", tab: "robotics" }, "", withBasePath("/work?tab=robotics#liquid"));
+                  setTabRaw("robotics");
+                  setPageRaw("work");
+                } else navigate(p);
+              }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
