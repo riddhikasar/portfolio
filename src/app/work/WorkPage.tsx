@@ -1374,7 +1374,8 @@ function ProjectIndex({ projects, active, activeSub, openSubs, onSelect }: {
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.45, ease: EASE_OUT }}
                 >
-                  <div className="flex flex-col items-start" style={{ paddingTop: 14, paddingLeft: STAR + 10, gap: 12 }}>
+                  <div className="flex flex-col items-start" // paddingRight: room inside the clipping box so the longest label (tight tracking + hover nudge) isn't cut
+                    style={{ paddingTop: 14, paddingLeft: STAR + 10, paddingRight: 16, gap: 12 }}>
                     {p.subs!.map((sub, i) => {
                       const current = sub.id === activeSub;
                       return (

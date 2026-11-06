@@ -1,5 +1,5 @@
 import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { motion, MotionConfig, useInView } from "motion/react";
+import { motion, MotionConfig } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 
 import introBg from "@/assets/home/intro_bg.avif";
@@ -41,12 +41,12 @@ const rise = (delay: number, instant = false) => ({
   transition: { duration: 0.8, ease: EASE_OUT, delay },
 } as const);
 
-const TEXT_REVEAL = {
+// Body text loads with the page (not on scroll), so the manifesto is there as soon as About opens
+const textReveal = (delay: number) => ({
   initial: { opacity: 0, y: 40, filter: "blur(6px)" },
-  whileInView: { opacity: 1, y: 0, filter: "blur(0px)" },
-  viewport: { once: true, margin: "0px 0px -8% 0px" },
-  transition: { duration: 1, ease: EASE_OUT },
-} as const;
+  animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+  transition: { duration: 1, ease: EASE_OUT, delay },
+} as const);
 
 // Underlined link in body text; the arrow nudges out on hover
 function A({ href, onClick, children }: { href?: string; onClick?: () => void; children: ReactNode }) {
@@ -68,15 +68,14 @@ function A({ href, onClick, children }: { href?: string; onClick?: () => void; c
 
 // Star + heading, words rising out of a mask (as on Home and Work)
 function Heading({ children, delay = 0 }: { children: string; delay?: number }) {
-  // watched on the heading itself: the words start below their mask, so they never count as "in view"
-  const ref = useRef<HTMLHeadingElement>(null);
-  const inView = useInView(ref, { once: true, margin: "0px 0px -10% 0px" });
+  // plays on load with the rest of the page, not on scroll
+  const inView = true;
   const words = children.split(" ");
   const compact = useContext(Compact);
   const h = compact ? COMPACT.heading : HEADING;
   const starW = compact ? COMPACT.star : 38;
   return (
-    <h2 ref={ref} className="flex items-start" style={h}>
+    <h2 className="flex items-start" style={h}>
       <motion.img
         src={star}
         alt=""
@@ -108,13 +107,13 @@ function Heading({ children, delay = 0 }: { children: string; delay?: number }) 
 }
 
 // Body under a heading: indented to line up with the heading text, not the star
-function Body({ children }: { children: ReactNode }) {
+function Body({ children, delay = 0.5 }: { children: ReactNode; delay?: number }) {
   const compact = useContext(Compact);
   const style = compact
     ? { ...COMPACT.body, gap: COMPACT.paragraphGap, marginTop: COMPACT.headingToText }
     : { ...BODY, gap: PARAGRAPH_GAP, marginTop: HEADING_TO_TEXT, paddingLeft: 38 + 18 };
   return (
-    <motion.div {...TEXT_REVEAL} className="flex flex-col" style={style}>
+    <motion.div {...textReveal(delay)} className="flex flex-col" style={style}>
       {children}
     </motion.div>
   );
@@ -256,9 +255,9 @@ export default function AboutPage({ navigate }: { navigate: (p: SitePage) => voi
                 </Body>
 
                 <div style={{ marginTop: compact ? COMPACT.sectionSpace : SECTION_SPACE }}>
-                  <Heading>A manifesto</Heading>
+                  <Heading delay={0.5}>A manifesto</Heading>
                 </div>
-                <Body>
+                <Body delay={0.6}>
                   <p>
                     If you told people 151 years ago that they could talk to each other from across oceans, they would think it’s
                     magic. Today, we carry that magic in our pockets and barely think twice about it.
