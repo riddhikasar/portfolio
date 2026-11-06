@@ -97,6 +97,7 @@ const NOTES: Record<string, string> = {
   river: "I clicked this picture on a sunny winter morning in Cambridge. And then proceeded to walk across this frozen Charles river.",
   magnanimous: "Digital fanart for my favorite novel. I was experimenting with light to capture something colossal, yet kind.",
   "cotton candy skies": "This poem is a love letter to finding magic in the mundane. To love simply because you can.",
+  "Some Proof": "I wrote this poem to capture the feeling of falling in love with the same things, over and over again, even after forgetting them. It’s nothing short of magic.",
   "[...]": "I wrote this poem to remind myself to use those stickers on pretty things and non-pretty things alike.",
   sketch: "A pencil sketch of Xie Lian pondering about what to have for dinner. He’s just like me.",
   train: "Whenever I took the last train back home, I always felt a tinge of loneliness. But one day, I saw someone enjoying this emptiness and finding comfort in it. So I attempted to capture that emotion and keep it with me forever.",
