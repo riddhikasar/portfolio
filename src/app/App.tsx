@@ -1079,7 +1079,7 @@ export default function App() {
           </motion.div>
         ) : page === "work" ? (
           <motion.div key="work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-            <WorkPageV2 tab={activeTab === "robotics" ? "robotics" : "digital"} onTab={setActiveTab} navigate={p => navigate(p)} />
+            <WorkPageV2 tab={activeTab === "robotics" ? "robotics" : "digital"} navigate={p => navigate(p)} />
           </motion.div>
         ) : page === "liquid" ? (
           <motion.div key="liquid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>

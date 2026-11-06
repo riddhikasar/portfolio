@@ -1025,9 +1025,9 @@ function Divider() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Page
 // ─────────────────────────────────────────────────────────────────────────────
-export default function WorkPage({ tab, onTab, navigate }: {
+// `tab` is only read for old /work?tab=robotics links (and Home's TROD card), which open on TROD
+export default function WorkPage({ tab, navigate }: {
   tab: WorkTab;
-  onTab: (tab: WorkTab) => void;
   navigate: (p: SitePage | "noonchi") => void;
 }) {
   const { scale, stageW, compact } = useStageScale();
@@ -1113,7 +1113,6 @@ export default function WorkPage({ tab, onTab, navigate }: {
   useEffect(() => {
     if (tab === "robotics") setPendingJump(ROBOTICS[0].id);
   }, [tab]);
-  void onTab;
 
   const menuActive = isRobotics(active) ? "robotics" : active;
   const menuSub = isRobotics(active) ? active : activeSub;
