@@ -92,6 +92,43 @@ const ITEMS: Record<string, Item> = {
     title: { text: "wind blowing against a forest of pine trees", color: "#0f0c06", x: 0.503, y: 0.965 } },
 };
 
+// Short note shown under each piece in the viewer (photos and art by id, poems by title)
+const NOTES: Record<string, string> = {
+  river: "I clicked this picture on a sunny winter morning in Cambridge. And then proceeded to walk across this frozen Charles river.",
+  magnanimous: "Digital fanart for my favorite novel. I was experimenting with light to capture something colossal, yet kind.",
+  "cotton candy skies": "This poem is a love letter to finding magic in the mundane. To love simply because you can.",
+  "[...]": "I wrote this poem to remind myself to use those stickers on pretty things and non-pretty things alike.",
+  sketch: "A pencil sketch of Xie Lian pondering about what to have for dinner. He’s just like me.",
+  train: "Whenever I took the last train back home, I always felt a tinge of loneliness. But one day, I saw someone enjoying this emptiness and finding comfort in it. So I attempted to capture that emotion and keep it with me forever.",
+  path: "This very path in the Harvard forest lured me in and told me some of its secrets. I lied about not taking it because the trees told me to !",
+  trees: "Winter is my favorite because it is full of paradoxes. It’s cold, yet soft; vast, yet all around. I took this picture to capture that duality.",
+  sunflowers: "I was on my way to Trader Joe’s one day and saw these sunflowers reaching their heads up to kiss the sunlight. Ah young love…",
+  "I wish I may, I wish I might...": "I saw a shooting star one day and wished on it. And I wondered how my wish would reach that star. So I wrote this poem to illustrate the journey of a wish.",
+  painting: "Taken at the Harvard Arts Museum",
+  serenity: "A digital art drawn for Krishna Janmashtami (Krishna’s birthday!)",
+  rotunda: "Taken at the Widener Library at Harvard. The light, the composition, and the architecture captures what I felt when I first stepped inside; pure awe.",
+  relief: "This particular sculpture spoke to me because it felt like a piece of history frozen in time.",
+  izumi: "A digital fanart for one of my favorites",
+  tower: "I was at the Boston public library and this frame caught my eye. The contrast between the two architectures was so striking. Doesn’t it look like the past looking up towards the future?",
+  traitor: "A digital illustration depicting the traitor and the betrayed.",
+  pines: "A pen and ink sketch of one of my favorite character designs from Dr. Stone. Fun fact, his name Matsukaze, literally means ‘wind blowing against a forest of pine trees’",
+  statue: "This photograph is dedicated to my sister!",
+  moon: "A digital illustration of a personified moon.",
+};
+
+// Note under the title in the viewer: the site's body type, 80% black, centred, no wider than the piece
+function Note({ text, scale, width }: { text?: string; scale: number; width: number }) {
+  if (!text) return null;
+  return (
+    <p
+      className="text-center"
+      style={{ fontFamily: SANS, fontSize: 18 * scale, lineHeight: 1.4, letterSpacing: -0.18 * scale, color: "black", opacity: TEXT_OPACITY, maxWidth: Math.min(width, 640 * scale), margin: 0 }}
+    >
+      {text}
+    </p>
+  );
+}
+
 // Columns of rows; each row's items sit side by side. Column shares come from Figma.
 type Column = { share: number; rows: string[][] };
 const PHOTO_COLUMNS: Column[] = [
@@ -671,7 +708,7 @@ function fitFrame(item: Placed, compact = false) {
   const ratio = item.w / item.h;
   // phones: nearly full width, leaving room for the arrows below
   const maxW = window.innerWidth * (compact ? 0.9 : 0.78);
-  const maxH = window.innerHeight * (compact ? 0.66 : 0.78);
+  const maxH = window.innerHeight * (compact ? 0.56 : 0.66); // leaves room for the title and note below
   const width = Math.min(maxW, maxH * ratio);
   return { width, height: width / ratio };
 }
@@ -688,7 +725,7 @@ function viewerPoemFit(poem: Poem, scale: number, compact = false) {
   );
   const tall = poemHeight(poem, 1) - 2 * POEM_PAD;
   const byW = (window.innerWidth * (compact ? 0.9 : 0.7) - 2 * POEM_PAD) / widest;
-  const byH = (window.innerHeight * (compact ? 0.68 : 0.8) - 2 * POEM_PAD) / tall;
+  const byH = (window.innerHeight * (compact ? 0.58 : 0.68) - 2 * POEM_PAD) / tall; // room for the note below
   return Math.min(1.4 * scale, byW, byH);
 }
 
@@ -763,8 +800,13 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
                     poem={entry.poem}
                     fit={viewerPoemFit(entry.poem, scale, compact)}
                     animate={false}
-                    style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.12)", background: SURFACE, width: "max-content" }}
+                    style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.12)", background: SURFACE, width: "max-content", marginInline: "auto" }}
                   />
+                  {NOTES[entry.poem.title] && (
+                    <div className="flex justify-center" style={{ marginTop: 20 * scale }}>
+                      <Note text={NOTES[entry.poem.title]} scale={scale} width={window.innerWidth * (compact ? 0.9 : 0.5)} />
+                    </div>
+                  )}
                 </motion.div>
               ) : item && (
               <motion.figure
@@ -792,8 +834,11 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
                   />
                 </div>
                 {item.title && (
-                  <figcaption style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 20 * scale, color: "black", opacity: TEXT_OPACITY }}>
-                    {item.title.text}
+                  <figcaption className="flex flex-col items-center" style={{ gap: 8 * scale }}>
+                    <span style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 20 * scale, color: "black", opacity: TEXT_OPACITY }}>
+                      {item.title.text}
+                    </span>
+                    <Note text={NOTES[item.id]} scale={scale} width={Math.max(fitFrame(item, compact).width, compact ? 0 : 480 * scale)} />
                   </figcaption>
                 )}
               </motion.figure>
