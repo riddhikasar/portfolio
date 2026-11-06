@@ -131,7 +131,7 @@ function Note({ text, scale, width, side }: { text?: string; scale: number; widt
 }
 
 // Desktop viewer: the piece stays centred; title + note hang off its right edge in a narrow column, level with
-// its top. The piece gets the rest of the width (room for the column is kept on both sides, so it stays centred)
+// its bottom. The piece gets the rest of the width (room for the column is kept on both sides, so it stays centred)
 const sideNote = (scale: number) => ({ w: Math.round(Math.max(150, 190 * scale)), gap: Math.round(24 * scale) });
 
 // Columns of rows; each row's items sit side by side. Column shares come from Figma.
@@ -770,8 +770,8 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
   const side = sideNote(scale);
   // desktop: arrows (plus a little air) and the note column, kept on both sides so the piece stays centred
   const reserve = compact ? 0 : 2 * (edge + arrowSize + 16 * scale + side.gap + side.w);
-  // desktop: the column beside the piece, top-aligned with it
-  const besideStyle = { position: "absolute", left: `calc(100% + ${side.gap}px)`, top: 0, width: side.w } as const;
+  // desktop: the column beside the piece, level with its bottom edge
+  const besideStyle = { position: "absolute", left: `calc(100% + ${side.gap}px)`, bottom: 0, width: side.w } as const;
 
   return createPortal(
     <AnimatePresence>
