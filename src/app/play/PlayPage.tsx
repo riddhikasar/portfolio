@@ -130,8 +130,9 @@ function Note({ text, scale, width, side }: { text?: string; scale: number; widt
   );
 }
 
-// Desktop viewer: title + note sit in a column to the right of the piece, starting at its right edge
-const sideNote = (scale: number) => ({ w: Math.round(Math.max(240, 360 * scale)), gap: Math.round(40 * scale) });
+// Desktop viewer: the piece stays centred; title + note hang off its right edge in a narrow column, level with
+// its top. The piece gets the rest of the width (room for the column is kept on both sides, so it stays centred)
+const sideNote = (scale: number) => ({ w: Math.round(Math.max(150, 190 * scale)), gap: Math.round(24 * scale) });
 
 // Columns of rows; each row's items sit side by side. Column shares come from Figma.
 type Column = { share: number; rows: string[][] };
@@ -711,9 +712,9 @@ function useFontsReady() {
 function fitFrame(item: Placed, compact = false, reserveW = 0) {
   const ratio = item.w / item.h;
   // phones: nearly full width, leaving room for the arrows, title and note below.
-  // Desktop: reserveW leaves room for the title + note column beside it
-  const maxW = window.innerWidth * (compact ? 0.9 : 0.78) - reserveW;
-  const maxH = window.innerHeight * (compact ? 0.52 : 0.78);
+  // Desktop: reserveW is everything that isn't the piece (arrows, and the note column on both sides)
+  const maxW = compact ? window.innerWidth * 0.9 : window.innerWidth - reserveW;
+  const maxH = window.innerHeight * (compact ? 0.52 : 0.84);
   const width = Math.min(maxW, maxH * ratio);
   return { width, height: width / ratio };
 }
@@ -729,8 +730,8 @@ function viewerPoemFit(poem: Poem, scale: number, compact = false, reserveW = 0)
     ...lines.map(l => textWidth(l, `500 ${POEM_SIZE}px ${SERIF}`)),
   );
   const tall = poemHeight(poem, 1) - 2 * POEM_PAD;
-  const byW = (window.innerWidth * (compact ? 0.9 : 0.78) - reserveW - 2 * POEM_PAD) / widest;
-  const byH = (window.innerHeight * (compact ? 0.58 : 0.8) - 2 * POEM_PAD) / tall; // phones: room for the note below
+  const byW = ((compact ? window.innerWidth * 0.9 : window.innerWidth - reserveW) - 2 * POEM_PAD) / widest;
+  const byH = (window.innerHeight * (compact ? 0.58 : 0.84) - 2 * POEM_PAD) / tall; // phones: room for the note below
   return Math.min(1.4 * scale, byW, byH);
 }
 
@@ -744,8 +745,6 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
   const closeRef = useRef<HTMLButtonElement>(null);
   const isOpen = entry !== null;
   const item = entry?.kind === "image" ? entry.item : null;
-  const side = sideNote(scale);
-  const reserve = compact ? 0 : side.w + side.gap;
 
   // Keyboard, scroll lock and focus while open
   useEffect(() => {
@@ -768,6 +767,11 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
   const sm = siteMetrics(compact);
   const edge = sm.navX * scale;
   const arrowSize = compact ? 48 : 56 * scale;
+  const side = sideNote(scale);
+  // desktop: arrows (plus a little air) and the note column, kept on both sides so the piece stays centred
+  const reserve = compact ? 0 : 2 * (edge + arrowSize + 16 * scale + side.gap + side.w);
+  // desktop: the column beside the piece, top-aligned with it
+  const besideStyle = { position: "absolute", left: `calc(100% + ${side.gap}px)`, top: 0, width: side.w } as const;
 
   return createPortal(
     <AnimatePresence>
@@ -797,8 +801,8 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
               {entry.kind === "poem" ? (
                 <motion.div
                   key={entry.key}
-                  className={`pointer-events-auto flex ${compact ? "flex-col" : "flex-row items-end"}`}
-                  style={{ gap: compact ? 20 * scale : side.gap }}
+                  className={`pointer-events-auto relative ${compact ? "flex flex-col" : ""}`}
+                  style={{ gap: 20 * scale }}
                   initial={{ opacity: 0, scale: 0.96, y: 12 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98 }}
@@ -811,7 +815,7 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
                     style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.12)", background: SURFACE, width: "max-content", marginInline: "auto" }}
                   />
                   {NOTES[entry.poem.title] && (
-                    <div className={compact ? "flex justify-center" : ""} style={compact ? undefined : { width: side.w }}>
+                    <div className={compact ? "flex justify-center" : ""} style={compact ? undefined : besideStyle}>
                       <Note text={NOTES[entry.poem.title]} scale={scale} width={compact ? window.innerWidth * 0.9 : side.w} side={!compact} />
                     </div>
                   )}
@@ -819,8 +823,8 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
               ) : item && (
               <motion.figure
                 key={item.id}
-                className={`m-0 flex pointer-events-auto ${compact ? "flex-col items-center" : "flex-row items-end"}`}
-                style={{ gap: compact ? 16 * scale : side.gap }}
+                className={`m-0 pointer-events-auto relative ${compact ? "flex flex-col items-center" : ""}`}
+                style={{ gap: 16 * scale }}
                 initial={{ opacity: 0, scale: 0.96, y: 12 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98 }}
@@ -842,7 +846,7 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
                   />
                 </div>
                 {item.title && (
-                  <figcaption className={`flex flex-col ${compact ? "items-center" : "items-start"}`} style={{ gap: 8 * scale, width: compact ? undefined : side.w }}>
+                  <figcaption className={`flex flex-col ${compact ? "items-center" : "items-start"}`} style={compact ? { gap: 8 * scale } : { ...besideStyle, gap: 8 * scale }}>
                     <span style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 20 * scale, color: "black", opacity: TEXT_OPACITY }}>
                       {item.title.text}
                     </span>
