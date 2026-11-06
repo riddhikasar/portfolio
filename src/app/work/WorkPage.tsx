@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, Fragment, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { AnimatePresence, motion, MotionConfig, useInView } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 
@@ -48,10 +48,8 @@ import relevoColors from "@/assets/work/r_colors.avif";
 import fem1Mp4 from "@/assets/relevo/fem_1.mp4";
 import fem2Mp4 from "@/assets/relevo/fem_2.mp4";
 import relevoClipMp4 from "@/assets/relevo/demo_1.mp4";
-import relevoHero from "@/assets/home/relevo.avif";
-import trodCard from "@/assets/home/trod.avif";
 import {
-  CARD_HOVER, CONTENT_TOP, EASE_OUT, CAPTION_GREY, FADED_GREY, GAP, HOVER_SPRING, scrollToY, SiteFooter, SURFACE, TEXT_GREY, ToTop, useAtBottom, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, menuRow, siteMetrics, SUBNAV_H,
+  CARD_HOVER, CONTENT_TOP, EASE_OUT, CAPTION_GREY, FADED_GREY, GAP, HOVER_SPRING, scrollToY, SiteFooter, SURFACE, TEXT_GREY, ToTop, useAtBottom, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, siteMetrics,
   TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -1001,6 +999,24 @@ const ROBOTICS: Project[] = [
   },
 ];
 
+// One page: the digital projects, then the robotics ones
+const ALL: Project[] = [...DIGITAL, ...ROBOTICS];
+const isRobotics = (id?: string) => ROBOTICS.some(p => p.id === id);
+
+// Side menu: each digital project with its sections, then "Robotics" with one entry per robotics project
+type MenuEntry = { id: string; label: string; subs?: { id: string; label: string }[] };
+const MENU_ENTRIES: MenuEntry[] = [
+  ...DIGITAL.map(p => ({ id: p.id, label: p.label, subs: p.subs })),
+  { id: "robotics", label: "Robotics", subs: ROBOTICS.map(p => ({ id: p.id, label: p.label })) },
+];
+
+// Hairline between projects: half the project gap above and below it,
+// drawn like the line above the contact links on Home's hello card
+function Divider() {
+  const m = useM();
+  return <div aria-hidden style={{ height: 0.5, background: FADED_GREY, margin: `${-m.sectionGap / 2}px 0` }} />;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Page
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1012,12 +1028,12 @@ export default function WorkPage({ tab, onTab, navigate }: {
   const { scale, stageW, compact } = useStageScale();
   const sm = siteMetrics(compact);
   const m = compact ? COMPACT : DESKTOP;
-  // Compact: the Digital/Robotics switch gets its own row under the menu, and there's no side index
-  const headerH = compact ? sm.navTop + sm.menu * 1.1 + SUBNAV_H + 12 : NAV_TOP * 2 + MENU_SIZE * 1.1;
-  const contentTop = compact ? sm.contentTop + SUBNAV_H : CONTENT_TOP;
+  // Compact: no side index
+  const headerH = compact ? sm.navTop + sm.menu * 1.1 + 12 : NAV_TOP * 2 + MENU_SIZE * 1.1;
+  const contentTop = compact ? sm.contentTop : CONTENT_TOP;
   const columnX = compact ? sm.navX : COLUMN_X;
   const columnW = compact ? stageW - 2 * sm.navX : Math.min(stageW - PAD_X - COLUMN_X, CARD_W);
-  const projects = tab === "robotics" ? ROBOTICS : DIGITAL;
+  const projects = ALL;
 
   // The stage is scaled with a transform, so its height is measured and set on the outer box
   const stageRef = useRef<HTMLDivElement>(null);
@@ -1059,26 +1075,39 @@ export default function WorkPage({ tab, onTab, navigate }: {
     return () => window.removeEventListener("scroll", onScroll);
   }, [projects]);
 
-  const scrollTo = (id: string, subId?: string) => {
+  // Going to another project jumps straight there; a section of the project being read scrolls smoothly
+  const scrollTo = (id: string, subId?: string, instant = id !== active) => {
     const el = subId ? anchor(id, subId) : sectionRefs.current[id];
     if (!el) return;
-    scrollToY(el.getBoundingClientRect().top + window.scrollY - contentTop * scale);
+    const y = el.getBoundingClientRect().top + window.scrollY - contentTop * scale;
+    if (instant) window.scrollTo({ top: y, behavior: "instant" });
+    else scrollToY(y);
+  };
+  const onSelect = (entryId: string, subId?: string) => {
+    if (entryId === "robotics") scrollTo(subId ?? ROBOTICS[0].id);
+    else scrollTo(entryId, subId);
   };
 
-  // Arriving with #section in the URL (Home's Relevo card) scrolls to that project once laid out
-  useEffect(() => {
+  // Arriving for a project further down (Home's Relevo card: #relevo; TROD card: ?tab=robotics) opens right on it:
+  // the projects stay hidden until the page is laid out and has jumped there, so there's no scroll from Noonchi
+  const [pendingJump, setPendingJump] = useState<string | null>(() => {
     const id = window.location.hash.slice(1);
-    if (!id || !projects.some(p => p.id === id)) return;
-    const t = window.setTimeout(() => scrollTo(id), 350);
-    return () => window.clearTimeout(t);
+    if (ALL.some(p => p.id === id)) return id;
+    return tab === "robotics" ? ROBOTICS[0].id : null;
+  });
+  useLayoutEffect(() => {
+    if (!pendingJump || height <= 1080) return; // wait for the stage to be measured
+    scrollTo(pendingJump, undefined, true);
+    setPendingJump(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects]);
+  }, [height, pendingJump]);
+  useEffect(() => {
+    if (tab === "robotics") setPendingJump(ROBOTICS[0].id);
+  }, [tab]);
+  void onTab;
 
-  const switchTab = (next: WorkTab) => {
-    if (next === tab) return;
-    window.scrollTo({ top: 0 });
-    onTab(next);
-  };
+  const menuActive = isRobotics(active) ? "robotics" : active;
+  const menuSub = isRobotics(active) ? active : activeSub;
 
   return (
     <MotionConfig reducedMotion="user">
@@ -1091,18 +1120,18 @@ export default function WorkPage({ tab, onTab, navigate }: {
         >
           <div className="absolute top-0 left-0 origin-top-left pointer-events-auto" style={{ width: stageW, transform: `scale(${scale})` }}>
             <TopNav current="work" compact={compact} onSelect={page => page !== "work" && navigate(page)} />
-            <TabSwitch value={tab} onChange={switchTab} compact={compact} />
           </div>
         </div>
 
         {/* Fixed project index and back-to-top */}
         {!compact && <div className="fixed top-0 left-0 z-20 origin-top-left pointer-events-none" style={{ width: stageW, transform: `scale(${scale})` }}>
           <ProjectIndex
-            projects={projects}
-            active={active}
-            activeSub={activeSub}
-            openSubs={active && (projects.findIndex(p => p.id === active) > 0 || activeSub) ? active : undefined}
-            onSelect={scrollTo}
+            entries={MENU_ENTRIES}
+            active={menuActive}
+            activeSub={menuSub}
+            // the project being read always shows its sections (Robotics: its projects)
+            openSubs={menuActive}
+            onSelect={onSelect}
           />
         </div>}
         <ToTop show={scrolled} scale={scale} compact={compact} />
@@ -1113,7 +1142,7 @@ export default function WorkPage({ tab, onTab, navigate }: {
           <div
             ref={stageRef}
             className="absolute top-0 left-0 origin-top-left"
-            style={{ width: stageW, transform: `scale(${scale})`, paddingTop: contentTop, paddingBottom: compact ? 96 : BOTTOM_MARGIN }}
+            style={{ width: stageW, transform: `scale(${scale})`, paddingTop: contentTop, paddingBottom: compact ? 96 : BOTTOM_MARGIN, opacity: pendingJump ? 0 : 1 }}
           >
             <AnimatePresence mode="wait">
               <motion.div
@@ -1125,8 +1154,10 @@ export default function WorkPage({ tab, onTab, navigate }: {
                 className="flex flex-col"
                 style={{ marginLeft: columnX, width: columnW, gap: m.sectionGap }}
               >
-                {projects.map(p => (
-                  <section key={p.id} ref={el => { sectionRefs.current[p.id] = el; }} aria-labelledby={`work-${p.id}`}>
+                {projects.map((p, i) => (
+                  <Fragment key={p.id}>
+                  {i > 0 && <Divider />}
+                  <section ref={el => { sectionRefs.current[p.id] = el; }} aria-labelledby={`work-${p.id}`}>
                     {/* Phones: the team line goes under the title */}
                     <div className={compact ? "flex flex-col" : "flex items-end justify-between"} style={{ gap: compact ? 6 : GAP }}>
                       <ProjectTitle id={`work-${p.id}`} text={p.title} active={p.id === active} />
@@ -1136,8 +1167,8 @@ export default function WorkPage({ tab, onTab, navigate }: {
                     </div>
                     <div className="flex flex-col" style={{ gap: m.cardGap, marginTop: m.headingToCard }}>{p.content}</div>
                   </section>
+                  </Fragment>
                 ))}
-                <NextCard {...NEXT[tab]} onOpen={() => switchTab(tab === "digital" ? "robotics" : "digital")} />
               </motion.div>
             </AnimatePresence>
           </div>
@@ -1145,90 +1176,6 @@ export default function WorkPage({ tab, onTab, navigate }: {
       </div>
       </MetricsCtx.Provider>
     </MotionConfig>
-  );
-}
-
-// End of each tab: a card for the other tab, spaced like the next project and set off by a hairline. Same card as Home's
-// project cards: image, frosted strip, logo-star + title + line, arrow on hover, lift on hover.
-const NEXT: Record<WorkTab, { label: string; title: string; description: string; image: string; alt: string; tone: "light" | "dark" }> = {
-  digital: {
-    label: "Next - Robotics",
-    title: "Robotics",
-    description: "TROD, Epicure Robotics and Liquid Data",
-    image: trodCard,
-    alt: "TROD robot",
-    tone: "light",
-  },
-  robotics: {
-    label: "Next - Digital Interfaces",
-    title: "Digital Interfaces",
-    description: "Noonchi and Relevo",
-    image: relevoHero,
-    alt: "Relevo wearable and clinical dashboard",
-    tone: "dark",
-  },
-};
-
-function NextCard({ label, title, description, image, alt, tone, onOpen }: (typeof NEXT)[WorkTab] & { onOpen: () => void }) {
-  const [hover, setHover] = useState(false);
-  const m = useM();
-  const n = m.next;
-  const fg = tone === "dark" ? "#ffffff" : "#000000";
-  return (
-    <motion.div {...REVEAL} className="flex flex-col" style={{ gap: m.headingToCard, marginTop: -m.sectionGap / 2 }}>
-      {/* Hairline dividing the projects from what's next: half the project gap above and below it,
-          drawn like the line above the contact links on Home's hello card */}
-      <div aria-hidden style={{ height: 0.5, background: FADED_GREY, marginBottom: m.sectionGap / 2 - m.headingToCard }} />
-      <p style={m.body}>{label}</p>
-      <motion.button
-        onClick={onOpen}
-        onHoverStart={() => setHover(true)}
-        onHoverEnd={() => setHover(false)}
-        onFocus={() => setHover(true)}
-        onBlur={() => setHover(false)}
-        aria-label={label}
-        className="relative w-full overflow-hidden text-left cursor-pointer outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
-        style={{ height: n.h, borderRadius: m.radius, background: MEDIA_BG }}
-        whileHover={CARD_HOVER}
-        whileTap={{ scale: 0.99, transition: { duration: 0.1 } }}
-        transition={HOVER_SPRING}
-      >
-        <img src={image} alt={alt} loading="lazy" decoding="async" draggable={false} className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" />
-        {/* Frosted strip, feathered at the top: the same strip as Home's card for each image
-            (Relevo: barely tinted, 12px blur; TROD: 60% tint, 24px blur) */}
-        <div
-          className="absolute"
-          style={{
-            left: -24,
-            right: -24,
-            bottom: 0,
-            height: n.strip,
-            background: tone === "dark" ? "rgba(255,255,255,0.01)" : "rgba(248,250,252,0.6)",
-            backdropFilter: `blur(${tone === "dark" ? 12 : 24}px)`,
-            WebkitBackdropFilter: `blur(${tone === "dark" ? 12 : 24}px)`,
-            maskImage: "linear-gradient(to bottom, transparent 0, black 28px)",
-            WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 28px)",
-          }}
-        />
-        <div className="absolute flex flex-col items-start" style={{ left: n.x, bottom: n.bottom, gap: m.compact ? 6 : 13 }}>
-          <div className="flex items-center" style={{ gap: m.compact ? 8 : 12 }}>
-            <img src={star} alt="" width={n.star} height={n.star * 31 / 30} draggable={false} style={{ filter: tone === "dark" ? "invert(1)" : undefined }} />
-            <span style={{ fontSize: n.title, lineHeight: 1.1, letterSpacing: -n.title * 0.05, fontWeight: 500, color: fg }}>{title}</span>
-            <motion.span
-              className="flex"
-              style={{ color: fg }}
-              initial={false}
-              animate={{ opacity: hover ? 1 : 0, x: hover ? 0 : -8, y: hover ? 0 : 8 }}
-              transition={{ duration: 0.35, ease: EASE_OUT }}
-              aria-hidden
-            >
-              <ArrowUpRight size={n.title * 0.875} strokeWidth={1.75} />
-            </motion.span>
-          </div>
-          <span style={{ fontSize: n.desc, lineHeight: "normal", letterSpacing: -0.2, color: fg, opacity: 0.8 }}>{description}</span>
-        </div>
-      </motion.button>
-    </motion.div>
   );
 }
 
@@ -1279,48 +1226,11 @@ function ProjectTitle({ id, text, active }: { id: string; text: string; active: 
   );
 }
 
-// Digital Interfaces / Robotics, right-aligned with the menu (same style as Play's filters)
-function TabSwitch({ value, onChange, compact = false }: { value: WorkTab; onChange: (t: WorkTab) => void; compact?: boolean }) {
-  const sm = siteMetrics(compact);
-  const size = compact ? 15 : MENU_SIZE;
-  const tabs: { id: WorkTab; label: string }[] = [
-    { id: "digital", label: "Digital Interfaces" },
-    { id: "robotics", label: "Robotics" },
-  ];
-  return (
-    <motion.div
-      className="absolute flex items-center"
-      // Compact: second row, under the menu on the left
-      style={compact ? menuRow(true, sm.navX, sm.navTop + sm.menu * 1.1 + 14, 16) : { right: NAV_X, top: NAV_TOP, gap: 20 }}
-      role="group"
-      aria-label="Work type"
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.1 }}
-    >
-      {tabs.map(t => {
-        const on = t.id === value;
-        return (
-          <button
-            key={t.id}
-            onClick={() => onChange(t.id)}
-            aria-pressed={on}
-            className={`whitespace-nowrap cursor-pointer ${on ? "opacity-100" : "opacity-20"} ${LINK_CLASS}`}
-            style={{ fontSize: size, lineHeight: 1.1, letterSpacing: -size * 0.05, fontWeight: on ? 600 : 400, color: "black", transition: "opacity 0.3s ease-out" }}
-          >
-            {t.label}
-          </button>
-        );
-      })}
-    </motion.div>
-  );
-}
-
 // Left column: one entry per project. The one being read is semibold, with a small star that
 // slides between entries. Under the open project its sections unfold (Context, Challenge, ...), the
 // one being read in semibold. Lines up with the first image.
-function ProjectIndex({ projects, active, activeSub, openSubs, onSelect }: {
-  projects: Project[];
+function ProjectIndex({ entries, active, activeSub, openSubs, onSelect }: {
+  entries: MenuEntry[];
   active?: string;
   activeSub?: string;
   openSubs?: string;
@@ -1336,7 +1246,7 @@ function ProjectIndex({ projects, active, activeSub, openSubs, onSelect }: {
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.2 }}
     >
-      {projects.map(p => {
+      {entries.map(p => {
         const on = p.id === active;
         const open = p.id === openSubs && !!p.subs;
         return (
@@ -1374,8 +1284,8 @@ function ProjectIndex({ projects, active, activeSub, openSubs, onSelect }: {
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.45, ease: EASE_OUT }}
                 >
-                  <div className="flex flex-col items-start" // paddingRight: room inside the clipping box so the longest label (tight tracking + hover nudge) isn't cut
-                    style={{ paddingTop: 14, paddingLeft: STAR + 10, paddingRight: 16, gap: 12 }}>
+                  <div className="flex flex-col items-start" // paddingTop = gap, so items are evenly spaced; paddingRight: room inside the clipping box so the longest label isn't cut
+                    style={{ paddingTop: 12, paddingLeft: STAR + 10, paddingRight: 16, gap: 12 }}>
                     {p.subs!.map((sub, i) => {
                       const current = sub.id === activeSub;
                       return (
