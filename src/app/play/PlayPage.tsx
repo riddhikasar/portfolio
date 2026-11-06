@@ -116,18 +116,22 @@ const NOTES: Record<string, string> = {
   moon: "A digital illustration of a personified moon.",
 };
 
-// Note under the title in the viewer: the site's body type, 80% black, centred, no wider than the piece
-function Note({ text, scale, width }: { text?: string; scale: number; width: number }) {
+// Note under the title in the viewer: the site's body type, 80% black. Desktop: left-aligned in a column beside
+// the piece; phones: centred under it
+function Note({ text, scale, width, side }: { text?: string; scale: number; width: number; side: boolean }) {
   if (!text) return null;
   return (
     <p
-      className="text-center"
-      style={{ fontFamily: SANS, fontSize: 18 * scale, lineHeight: 1.4, letterSpacing: -0.18 * scale, color: "black", opacity: TEXT_OPACITY, maxWidth: Math.min(width, 640 * scale), margin: 0 }}
+      className={side ? "text-left" : "text-center"}
+      style={{ fontFamily: SANS, fontSize: 18 * scale, lineHeight: 1.4, letterSpacing: -0.18 * scale, color: "black", opacity: TEXT_OPACITY, maxWidth: width, margin: 0 }}
     >
       {text}
     </p>
   );
 }
+
+// Desktop viewer: title + note sit in a column to the right of the piece, starting at its right edge
+const sideNote = (scale: number) => ({ w: Math.round(Math.max(240, 360 * scale)), gap: Math.round(40 * scale) });
 
 // Columns of rows; each row's items sit side by side. Column shares come from Figma.
 type Column = { share: number; rows: string[][] };
@@ -704,11 +708,12 @@ function useFontsReady() {
 }
 
 // Largest box with the card's aspect ratio that fits within 78% of the viewport
-function fitFrame(item: Placed, compact = false) {
+function fitFrame(item: Placed, compact = false, reserveW = 0) {
   const ratio = item.w / item.h;
-  // phones: nearly full width, leaving room for the arrows below
-  const maxW = window.innerWidth * (compact ? 0.9 : 0.78);
-  const maxH = window.innerHeight * (compact ? 0.56 : 0.66); // leaves room for the title and note below
+  // phones: nearly full width, leaving room for the arrows, title and note below.
+  // Desktop: reserveW leaves room for the title + note column beside it
+  const maxW = window.innerWidth * (compact ? 0.9 : 0.78) - reserveW;
+  const maxH = window.innerHeight * (compact ? 0.52 : 0.78);
   const width = Math.min(maxW, maxH * ratio);
   return { width, height: width / ratio };
 }
@@ -717,15 +722,15 @@ function fitFrame(item: Placed, compact = false) {
 // LIGHTBOX — full photo over a blurred view of the page
 // ─────────────────────────────────────────────────────────────────────────────
 // Font scale for a poem shown in the viewer: as large as fits 80% of the viewport, up to 1.4× the screen scale
-function viewerPoemFit(poem: Poem, scale: number, compact = false) {
+function viewerPoemFit(poem: Poem, scale: number, compact = false, reserveW = 0) {
   const lines = poem.stanzas.flatMap(st => st.split("\n"));
   const widest = Math.max(
     textWidth(poem.title, `800 ${POEM_SIZE}px ${SERIF}`),
     ...lines.map(l => textWidth(l, `500 ${POEM_SIZE}px ${SERIF}`)),
   );
   const tall = poemHeight(poem, 1) - 2 * POEM_PAD;
-  const byW = (window.innerWidth * (compact ? 0.9 : 0.7) - 2 * POEM_PAD) / widest;
-  const byH = (window.innerHeight * (compact ? 0.58 : 0.68) - 2 * POEM_PAD) / tall; // room for the note below
+  const byW = (window.innerWidth * (compact ? 0.9 : 0.78) - reserveW - 2 * POEM_PAD) / widest;
+  const byH = (window.innerHeight * (compact ? 0.58 : 0.8) - 2 * POEM_PAD) / tall; // phones: room for the note below
   return Math.min(1.4 * scale, byW, byH);
 }
 
@@ -739,6 +744,8 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
   const closeRef = useRef<HTMLButtonElement>(null);
   const isOpen = entry !== null;
   const item = entry?.kind === "image" ? entry.item : null;
+  const side = sideNote(scale);
+  const reserve = compact ? 0 : side.w + side.gap;
 
   // Keyboard, scroll lock and focus while open
   useEffect(() => {
@@ -790,7 +797,8 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
               {entry.kind === "poem" ? (
                 <motion.div
                   key={entry.key}
-                  className="pointer-events-auto"
+                  className={`pointer-events-auto flex ${compact ? "flex-col" : "flex-row items-end"}`}
+                  style={{ gap: compact ? 20 * scale : side.gap }}
                   initial={{ opacity: 0, scale: 0.96, y: 12 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98 }}
@@ -798,21 +806,21 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
                 >
                   <PoemCard
                     poem={entry.poem}
-                    fit={viewerPoemFit(entry.poem, scale, compact)}
+                    fit={viewerPoemFit(entry.poem, scale, compact, reserve)}
                     animate={false}
                     style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.12)", background: SURFACE, width: "max-content", marginInline: "auto" }}
                   />
                   {NOTES[entry.poem.title] && (
-                    <div className="flex justify-center" style={{ marginTop: 20 * scale }}>
-                      <Note text={NOTES[entry.poem.title]} scale={scale} width={window.innerWidth * (compact ? 0.9 : 0.5)} />
+                    <div className={compact ? "flex justify-center" : ""} style={compact ? undefined : { width: side.w }}>
+                      <Note text={NOTES[entry.poem.title]} scale={scale} width={compact ? window.innerWidth * 0.9 : side.w} side={!compact} />
                     </div>
                   )}
                 </motion.div>
               ) : item && (
               <motion.figure
                 key={item.id}
-                className="m-0 flex flex-col items-center pointer-events-auto"
-                style={{ gap: 16 * scale }}
+                className={`m-0 flex pointer-events-auto ${compact ? "flex-col items-center" : "flex-row items-end"}`}
+                style={{ gap: compact ? 16 * scale : side.gap }}
                 initial={{ opacity: 0, scale: 0.96, y: 12 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98 }}
@@ -821,7 +829,7 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
                 {/* Same framing as the card: its aspect ratio and crop, just larger */}
                 <div
                   className="relative overflow-hidden"
-                  style={{ ...fitFrame(item, compact), borderRadius: 12 * scale, boxShadow: "0 24px 60px rgba(0,0,0,0.18)" }}
+                  style={{ ...fitFrame(item, compact, reserve), borderRadius: 12 * scale, boxShadow: "0 24px 60px rgba(0,0,0,0.18)" }}
                 >
                   <img
                     src={item.src}
@@ -834,11 +842,11 @@ function Lightbox({ entry, scale, onClose, onStep, compact = false }: {
                   />
                 </div>
                 {item.title && (
-                  <figcaption className="flex flex-col items-center" style={{ gap: 8 * scale }}>
+                  <figcaption className={`flex flex-col ${compact ? "items-center" : "items-start"}`} style={{ gap: 8 * scale, width: compact ? undefined : side.w }}>
                     <span style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 20 * scale, color: "black", opacity: TEXT_OPACITY }}>
                       {item.title.text}
                     </span>
-                    <Note text={NOTES[item.id]} scale={scale} width={Math.max(fitFrame(item, compact).width, compact ? 0 : 480 * scale)} />
+                    <Note text={NOTES[item.id]} scale={scale} width={compact ? fitFrame(item, compact).width : side.w} side={!compact} />
                   </figcaption>
                 )}
               </motion.figure>
