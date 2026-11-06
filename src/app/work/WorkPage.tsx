@@ -49,7 +49,7 @@ import fem1Mp4 from "@/assets/relevo/fem_1.mp4";
 import fem2Mp4 from "@/assets/relevo/fem_2.mp4";
 import relevoClipMp4 from "@/assets/relevo/demo_1.mp4";
 import {
-  CARD_HOVER, CONTENT_TOP, EASE_OUT, CAPTION_GREY, FADED_GREY, GAP, HOVER_SPRING, scrollToY, SiteFooter, SURFACE, TEXT_GREY, ToTop, useAtBottom, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, siteMetrics,
+  CARD_HOVER, CONTENT_TOP, EASE_OUT, CAPTION_GREY, FADED_GREY, GAP, HOVER_SPRING, SiteFooter, SURFACE, TEXT_GREY, ToTop, useAtBottom, LINK_CLASS, MENU_SIZE, NAV_TOP, NAV_X, RADIUS, SANS, siteMetrics,
   TopNav, useStageScale, type SitePage,
 } from "../site/site";
 
@@ -110,7 +110,9 @@ const MetricsCtx = createContext<Metrics>(DESKTOP);
 const useM = () => useContext(MetricsCtx);
 
 // Entrance shared by every block: rise into place as it scrolls in (same curve as Home's cards)
+// data-reveal: right after a jump these are shown in place instead (see .instant-reveal in index.css)
 const REVEAL = {
+  "data-reveal": "",
   initial: { opacity: 0, y: 56 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "0px 0px -8% 0px" },
@@ -306,6 +308,7 @@ function Heading({ id, children }: { id: string; children: string }) {
       {words.map((w, i) => (
         <span key={i} className="inline-block overflow-hidden align-bottom" style={{ padding: "0 0.12em 4px", margin: "0 -0.12em -4px" }}>
           <motion.span
+            data-reveal=""
             className="inline-block"
             initial={{ y: "110%" }}
             animate={{ y: inView ? "0%" : "110%" }}
@@ -370,6 +373,7 @@ function Callout({ title, children, href }: { title: ReactNode; children?: React
   const m = useM();
   // the block grows in, the star spins into place, then the headline and the line follow
   const rise = (delay: number) => ({
+    "data-reveal": "",
     initial: { opacity: 0, y: 10 },
     animate: inView ? { opacity: 1, y: 0 } : undefined,
     transition: { duration: 0.6, ease: EASE_OUT, delay },
@@ -383,6 +387,7 @@ function Callout({ title, children, href }: { title: ReactNode; children?: React
         height={m.callout.star * 31 / 30}
         draggable={false}
         className="shrink-0"
+        data-reveal=""
         initial={{ opacity: 0, scale: 0, rotate: -180 }}
         animate={inView ? { opacity: 1, scale: 1, rotate: 0 } : undefined}
         transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.25 }}
@@ -404,6 +409,7 @@ function Callout({ title, children, href }: { title: ReactNode; children?: React
   return (
     <motion.div
       ref={ref}
+      data-reveal=""
       initial={{ opacity: 0, y: 32, scale: 0.97 }}
       animate={inView ? { opacity: 1, y: 0, scale: 1 } : undefined}
       transition={{ duration: 0.8, ease: EASE_OUT }}
@@ -453,7 +459,6 @@ function Vimeo({ id, title, aspect, autoplay }: { id: string; title: string; asp
         allow="fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
         referrerPolicy="strict-origin-when-cross-origin"
         allowFullScreen
-        loading="lazy"
         className="absolute inset-0 w-full h-full border-0"
       />
     </motion.div>
@@ -1075,13 +1080,17 @@ export default function WorkPage({ tab, onTab, navigate }: {
     return () => window.removeEventListener("scroll", onScroll);
   }, [projects]);
 
-  // Going to another project jumps straight there; a section of the project being read scrolls smoothly
-  const scrollTo = (id: string, subId?: string, instant = id !== active) => {
+  // Menu clicks jump straight there, and what's at the destination is shown in place rather than animating in
+  // (the reveals would play out after the jump and look like it was still loading)
+  const revealTimer = useRef<number>();
+  const scrollTo = (id: string, subId?: string) => {
     const el = subId ? anchor(id, subId) : sectionRefs.current[id];
-    if (!el) return;
-    const y = el.getBoundingClientRect().top + window.scrollY - contentTop * scale;
-    if (instant) window.scrollTo({ top: y, behavior: "instant" });
-    else scrollToY(y);
+    const stage = stageRef.current;
+    if (!el || !stage) return;
+    stage.classList.add("instant-reveal");
+    window.clearTimeout(revealTimer.current);
+    revealTimer.current = window.setTimeout(() => stage.classList.remove("instant-reveal"), 1800); // longer than any reveal
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - contentTop * scale, behavior: "instant" });
   };
   const onSelect = (entryId: string, subId?: string) => {
     if (entryId === "robotics") scrollTo(subId ?? ROBOTICS[0].id);
@@ -1097,7 +1106,7 @@ export default function WorkPage({ tab, onTab, navigate }: {
   });
   useLayoutEffect(() => {
     if (!pendingJump || height <= 1080) return; // wait for the stage to be measured
-    scrollTo(pendingJump, undefined, true);
+    scrollTo(pendingJump);
     setPendingJump(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [height, pendingJump]);
@@ -1211,6 +1220,7 @@ function ProjectTitle({ id, text, active }: { id: string; text: string; active: 
             style={{ padding: "0 0.12em 4px", margin: "0 -0.12em -4px" }}
           >
             <motion.span
+              data-reveal=""
               className="inline-block"
               initial={{ y: "110%" }}
               animate={{ y: inView ? "0%" : "110%" }}
@@ -1229,6 +1239,8 @@ function ProjectTitle({ id, text, active }: { id: string; text: string; active: 
 // Left column: one entry per project. The one being read is semibold, with a small star that
 // slides between entries. Under the open project its sections unfold (Context, Challenge, ...), the
 // one being read in semibold. Lines up with the first image.
+const SUB_START = 0.12; // first sub-item fades in once the menu has started opening
+const SUB_STAGGER = 0.07; // then one after another
 function ProjectIndex({ entries, active, activeSub, openSubs, onSelect }: {
   entries: MenuEntry[];
   active?: string;
@@ -1270,7 +1282,7 @@ function ProjectIndex({ entries, active, activeSub, openSubs, onSelect }: {
                   transition={HOVER_SPRING}
                 />
               )}
-              <motion.span animate={{ x: on ? STAR + 10 : 0 }} whileHover={{ x: (on ? STAR + 10 : 0) + 4 }} transition={HOVER_SPRING}>
+              <motion.span animate={{ x: on ? STAR + 10 : 0 }} transition={HOVER_SPRING}>
                 {p.label}
               </motion.span>
             </button>
@@ -1279,30 +1291,35 @@ function ProjectIndex({ entries, active, activeSub, openSubs, onSelect }: {
                 <motion.div
                   key="subs"
                   className="overflow-hidden"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.45, ease: EASE_OUT }}
+                  // the space opens quickly, and the items fade and slide in one after another (SUB_STAGGER); each
+                  // starts only once the opening box has uncovered it, so the cascade is even down to the last one.
+                  // Closing fades first, then collapses.
+                  initial={{ height: 0 }}
+                  animate={{ height: "auto", transition: { duration: 0.28, ease: EASE_OUT } }}
+                  exit={{ height: 0, opacity: 0, transition: { opacity: { duration: 0.15 }, height: { duration: 0.3, delay: 0.1, ease: EASE_OUT } } }}
                 >
                   <div className="flex flex-col items-start" // paddingTop = gap, so items are evenly spaced; paddingRight: room inside the clipping box so the longest label isn't cut
                     style={{ paddingTop: 12, paddingLeft: STAR + 10, paddingRight: 16, gap: 12 }}>
                     {p.subs!.map((sub, i) => {
                       const current = sub.id === activeSub;
                       return (
-                        <motion.button
+                        <button
                           key={sub.id}
                           onClick={() => onSelect(p.id, sub.id)}
                           aria-current={current ? "true" : undefined}
                           // 80% / 20%: the site's text and faded greys
                           className={`text-left cursor-pointer whitespace-nowrap ${current ? "opacity-80" : "opacity-20"} ${LINK_CLASS}`}
                           style={{ ...SUBMENU, fontWeight: current ? 600 : 400, transition: "opacity 0.3s ease-out" }}
-                          initial={{ x: -8 }}
-                          animate={{ x: 0 }}
-                          whileHover={{ x: 4 }}
-                          transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.04 * i }}
                         >
-                          {sub.label}
-                        </motion.button>
+                          <motion.span
+                            className="inline-block"
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.4, ease: EASE_OUT, delay: SUB_START + SUB_STAGGER * i }}
+                          >
+                            {sub.label}
+                          </motion.span>
+                        </button>
                       );
                     })}
                   </div>

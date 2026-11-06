@@ -1,3 +1,11 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+/* Work page: right after jumping to a project from the side menu, blocks at the destination are shown in place
+   instead of rising in (the reveal would otherwise play after the jump and look like slow loading) */
+.instant-reveal [data-reveal] {
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+}

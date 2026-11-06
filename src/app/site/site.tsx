@@ -56,10 +56,10 @@ export const CARD_HOVER = { scale: 1.02, y: -6, boxShadow: "0px 18px 40px rgba(0
 
 export type SitePage = "home" | "work" | "play" | "about";
 
-// Every link brightens and lifts slightly
+// Every link brightens on hover with a soft fade; it doesn't move (moving text read as a jitter)
 export const LINK_CLASS =
-  "relative outline-none transition-[opacity,transform] duration-300 ease-out hover:opacity-100 hover:-translate-y-0.5 " +
-  "focus-visible:opacity-100 focus-visible:-translate-y-0.5 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4";
+  "relative outline-none transition-opacity duration-300 ease-out hover:opacity-100 " +
+  "focus-visible:opacity-100 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4";
 
 // ── Scrolling ────────────────────────────────────────────────────────────────
 // Smooth scroll that always lands (the browser's own smooth scroll gets cut short on long pages).
